@@ -1,0 +1,263 @@
+{
+  "generatedAt": "2026-03-05T14:50:05.376Z",
+  "source": "APS Global Physics Summit 2026",
+  "sourceTalkFile": "data/talks.generated.json",
+  "preferencesFile": "data/session-preferences.txt",
+  "parsedPreferences": {
+    "preferredPhrases": [
+      "quantum computing",
+      "error correction",
+      "superconducting qubits",
+      "quantum control"
+    ],
+    "avoidPhrases": [
+      "broad education-only sessions",
+      "history-only talks"
+    ],
+    "maxTalksPerDay": 4,
+    "dayStartMinutes": 540,
+    "dayEndMinutes": 1110,
+    "minBreakMinutes": 20
+  },
+  "summary": {
+    "totalTalksScheduled": 7,
+    "daysCovered": 2
+  },
+  "days": [
+    {
+      "date": "2026-03-15",
+      "talkCount": 3,
+      "talks": [
+        {
+          "id": "APS-13273",
+          "title": "Welcome &amp; Introductions",
+          "abstract": "Welcome &amp; Introductions",
+          "speakers": [],
+          "track": "INVITED",
+          "topics": [
+            "history of physics",
+            "tunneling",
+            "macroscopic quantum systems",
+            "superconducting qubits",
+            "quantum computing",
+            "manufacturing",
+            "physics & society",
+            "quantum sensing",
+            "noise",
+            "general physics",
+            "quantum devices",
+            "quantum-limited",
+            "josephson effects",
+            "superconductivity"
+          ],
+          "room": "Convention Center, Bellco Theatre 3-5",
+          "startTime": "2026-03-15T22:00:00.000Z",
+          "endTime": "2026-03-15T22:10:00.000Z",
+          "sourceUrl": "https://summit.aps.org/events/MAR-A02/1297",
+          "score": 8,
+          "reasons": [
+            "topic match: quantum computing",
+            "topic match: superconducting qubits"
+          ]
+        },
+        {
+          "id": "APS-13240",
+          "title": "From macroscopic quantum phenomena to superconducting artificial atoms",
+          "abstract": "Forty years ago, a fundamental inquiry into the possible quantum-ness of macroscopic variables—currents and voltages—launched the field of quantum superconducting circuits. This talk traces the journey from the pioneering experiments at Berkeley that first uncovered macroscopic quantum tunneling and energy quantization to the current era of \"artificial atoms.\" Unlike natural atoms, these engineered systems allow for precise control over energy levels and matrix elements by tailoring dimensional parameters. We will discuss how the ground and first excited states of these circuits are now utilized as qubits in processors exceeding 100 qubits, capable of executing quantum algorithms that challenge classical computation. Beyond computation, we highlight the transformative impact of superconducting circuits on quantum sensing, specifically their ability to amplify microwave signals at the fundamental limits of quantum physics.",
+          "speakers": [],
+          "track": "INVITED",
+          "topics": [
+            "history of physics",
+            "tunneling",
+            "quantum sensing",
+            "macroscopic quantum systems",
+            "quantum-limited",
+            "superconducting qubits",
+            "superconductivity",
+            "quantum computing",
+            "manufacturing",
+            "physics & society",
+            "noise",
+            "general physics",
+            "quantum devices",
+            "josephson effects"
+          ],
+          "room": "Convention Center, Bellco Theatre 3-5",
+          "startTime": "2026-03-15T22:56:00.000Z",
+          "endTime": "2026-03-15T23:32:00.000Z",
+          "sourceUrl": "https://summit.aps.org/events/MAR-A02/1297",
+          "score": 8,
+          "reasons": [
+            "topic match: quantum computing",
+            "topic match: superconducting qubits"
+          ]
+        },
+        {
+          "id": "APS-14832",
+          "title": "Closing Remarks",
+          "abstract": "",
+          "speakers": [],
+          "track": "INVITED",
+          "topics": [
+            "history of physics",
+            "tunneling",
+            "macroscopic quantum systems",
+            "superconducting qubits",
+            "quantum computing",
+            "manufacturing",
+            "physics & society",
+            "quantum sensing",
+            "noise",
+            "general physics",
+            "quantum devices",
+            "quantum-limited",
+            "josephson effects",
+            "superconductivity"
+          ],
+          "room": "Convention Center, Bellco Theatre 3-5",
+          "startTime": "2026-03-16T00:08:00.000Z",
+          "endTime": "2026-03-16T00:12:00.000Z",
+          "sourceUrl": "https://summit.aps.org/events/MAR-A02/1297",
+          "score": 8,
+          "reasons": [
+            "topic match: quantum computing",
+            "topic match: superconducting qubits"
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-03-16",
+      "talkCount": 4,
+      "talks": [
+        {
+          "id": "APS-4413",
+          "title": "On-chip GKP Quantum Error Correction with a Fluxonium Control Qubit, Part 1/2",
+          "abstract": "Bosonic quantum error correction (QEC) protocols encode and protect quantum information in the phase space of a quantum harmonic oscillator, offering a hardware-efficient path towards fault-tolerant quantum computing. To control the encoded information, a nonlinear element, such as a qubit, is coupled to the harmonic oscillator. With superconducting circuits, bosonic QEC has been achieved within the high-Q harmonic mode of a 3D microwave cavity dispersively coupled to a fixed-frequency transmon qubit. However, all previous demonstrations have been limited by bit-flips in the transmon control qubit and have been performed in 3D cavity architectures. We instead use a heavy fluxonium as a control qubit which can offer improved bit-flip lifetimes, coupled to a thousand-times smaller coplanar waveguide resonator in an extensible 2D architecture. Moreover, by tuning an external flux bias, we can decouple the fluxonium and harmonic oscillator in-situ to prevent backaction on the encoded information during parts of the error correction protocol. In this first part of a two-part talk, we will showcase operations needed for the creation and stabilization of a Gottesman-Kitaev-Preskill qubit in our planar architecture.",
+          "speakers": [],
+          "track": "FOCUS",
+          "topics": [
+            "quantum information",
+            "quantum computing",
+            "continuous variable",
+            "hybrid quantum systems",
+            "superconducting qubits",
+            "quantum control",
+            "quantum devices",
+            "qubits",
+            "error correction",
+            "quantum optics",
+            "quantum characterization"
+          ],
+          "room": "Convention Center, Mile High Ballroom 4D",
+          "startTime": "2026-03-16T15:12:00.000Z",
+          "endTime": "2026-03-16T15:24:00.000Z",
+          "sourceUrl": "https://summit.aps.org/events/MAR-A16/479",
+          "score": 16,
+          "reasons": [
+            "topic match: quantum computing",
+            "topic match: error correction",
+            "topic match: superconducting qubits",
+            "topic match: quantum control"
+          ]
+        },
+        {
+          "id": "APS-4416",
+          "title": "Single-Mode Grid-Code Operations Approaching 1% Logical Errors, Part 1: Theory",
+          "abstract": "Grid codes encode quantum information in bosonic states of an oscillator. By taking advantage of the redundancy in a single physical system, they offer a hardware-efficient route for fault-tolerant quantum computing [1]. The quality of logical grid state preparation and measurement (SPAM) is critical to achieve logical fidelities useful for quantum computing applications. Currently, the experimentally demonstrated schemes for SPAM in the superconducting architecture reach an infidelity of about 10%. State preparation of grid states based on sequences of echoed conditional displacements (ECD) using an auxiliary qubit [2] is limited by the trade-off between incoherent errors on the auxiliary qubit and coherent grid-state errors arising from the limited depth of the preparation circuit. Logical measurements based on a sequence of two ECDs [3] are limited by their lack of robustness against correctable photon loss errors affecting the oscillator's state. Here, we discuss improved SPAM protocols and benchmarking showing increased fidelities, using multi-round schemes, auxiliary mid-circuit measurements and postselection.<br><br>[1] M. Lemonde <em>et al.</em>, arXiv : 2409.05813 (2024)<br><br>[2] A. Eickbusch&nbsp;<em>et al.</em>&nbsp;Nat. Phys.&nbsp;18, 1464–1469 (2022)<br><br>[3] B. Royer <em>et al.</em>, Phys. Rev. Lett. 125, 260509 (2020)",
+          "speakers": [],
+          "track": "FOCUS",
+          "topics": [
+            "quantum information",
+            "measurement",
+            "quantum computing",
+            "continuous variable",
+            "hybrid quantum systems",
+            "quantum characterization",
+            "error correction",
+            "superconducting qubits",
+            "quantum control",
+            "qubits",
+            "quantum optics",
+            "quantum devices"
+          ],
+          "room": "Convention Center, Mile High Ballroom 4D",
+          "startTime": "2026-03-16T15:48:00.000Z",
+          "endTime": "2026-03-16T16:00:00.000Z",
+          "sourceUrl": "https://summit.aps.org/events/MAR-A16/479",
+          "score": 16,
+          "reasons": [
+            "topic match: quantum computing",
+            "topic match: error correction",
+            "topic match: superconducting qubits",
+            "topic match: quantum control"
+          ]
+        },
+        {
+          "id": "APS-4421",
+          "title": "Stabilizing a Continuous Family of Non-classical Grid States in an Oscillator",
+          "abstract": "Non-classical states of light are a valuable resource for quantum information processing, but they are fragile and decohere due to unwanted interactions with their environment. In particular, grid states based on the Gottesman-Kitaev-Preskill (GKP) code enable novel strategies for quantum transduction, communication, sensing, and error correction. In this work, we expand the breadth of these resources by extending the GKP code to a continuous family of codes, parametrized by the phases of the code stabilizers. We experimentally stabilize this code family for the case of a one-dimensional code space, where a single non-classical grid state of an oscillator is stabilized for each choice of the stabilizer phases. By measuring the Wigner function of this light after 10,000 stabilization rounds, corresponding to a duration of about 63 ms that is much longer than all timescales present in our physical system, we demonstrate that these non-classical states are stable in the steady state. Our work highlights the strength and flexibility of bosonic quantum error correction for stabilizing non-classical states of light against decoherence.",
+          "speakers": [],
+          "track": "FOCUS",
+          "topics": [
+            "quantum information",
+            "error correction",
+            "quantum states of light",
+            "continuous variable",
+            "quantum optics",
+            "quantum characterization",
+            "quantum sensing",
+            "quantum control",
+            "quantum computing",
+            "qubits",
+            "superconducting qubits",
+            "hybrid quantum systems",
+            "quantum devices"
+          ],
+          "room": "Convention Center, Mile High Ballroom 4D",
+          "startTime": "2026-03-16T16:24:00.000Z",
+          "endTime": "2026-03-16T16:36:00.000Z",
+          "sourceUrl": "https://summit.aps.org/events/MAR-A16/479",
+          "score": 16,
+          "reasons": [
+            "topic match: quantum computing",
+            "topic match: error correction",
+            "topic match: superconducting qubits",
+            "topic match: quantum control"
+          ]
+        },
+        {
+          "id": "APS-4640",
+          "title": "Fault-Tolerant Gates for Continuous-Variable Quantum Codes",
+          "abstract": "Many quantum error-correcting codes exist for continuous-variable systems with abelian group symmetries. Analogous codes for continuous-variable systems with nonabelian group symmetries, and the question of how to use them to perform fault-tolerant quantum computation, are less well-studied. I'll describe some approaches to formulating fault-tolerant logical operations on continuous-variable codes with general configuration spaces.",
+          "speakers": [],
+          "track": "ORAL",
+          "topics": [
+            "quantum information",
+            "continuous variable",
+            "quantum systems",
+            "formal theory",
+            "error correction",
+            "quantum control",
+            "quantum computing",
+            "qubits",
+            "superconducting qubits",
+            "quantum optics",
+            "quantum dynamics"
+          ],
+          "room": "Convention Center, Mile High Ballroom 1E",
+          "startTime": "2026-03-16T18:00:00.000Z",
+          "endTime": "2026-03-16T18:12:00.000Z",
+          "sourceUrl": "https://summit.aps.org/events/MAR-B09/500",
+          "score": 16,
+          "reasons": [
+            "topic match: quantum computing",
+            "topic match: error correction",
+            "topic match: superconducting qubits",
+            "topic match: quantum control"
+          ]
+        }
+      ]
+    }
+  ]
+}

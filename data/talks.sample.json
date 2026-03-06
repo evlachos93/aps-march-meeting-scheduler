@@ -1,0 +1,35 @@
+[
+  {
+    "id": "MM26-QC-001",
+    "title": "Fault-Tolerant Surface Code Benchmarks on Superconducting Qubits",
+    "abstract": "Experimental progress and error budgets for logical operations using repeated syndrome extraction.",
+    "speakers": ["A. Rivera"],
+    "track": "Experiment",
+    "topics": ["hardware", "error-correction"],
+    "room": "Colorado Convention Center 601",
+    "startTime": "2026-03-16T09:00:00-06:00",
+    "endTime": "2026-03-16T09:12:00-06:00"
+  },
+  {
+    "id": "MM26-QC-014",
+    "title": "Tensor-Network Methods for Noisy Quantum Circuits",
+    "abstract": "Efficient approximations for noisy intermediate-scale circuits and practical complexity tradeoffs.",
+    "speakers": ["P. Mehta"],
+    "track": "Numerical Simulation",
+    "topics": ["simulation", "algorithms"],
+    "room": "Colorado Convention Center 605",
+    "startTime": "2026-03-16T09:12:00-06:00",
+    "endTime": "2026-03-16T09:24:00-06:00"
+  },
+  {
+    "id": "MM26-QC-028",
+    "title": "Cryogenic Packaging Constraints for Scalable Qubit Arrays",
+    "abstract": "Materials and fabrication bottlenecks affecting yield in dense quantum packages.",
+    "speakers": ["N. Chen"],
+    "track": "Fabrication",
+    "topics": ["fabrication", "hardware"],
+    "room": "Colorado Convention Center 501",
+    "startTime": "2026-03-16T10:00:00-06:00",
+    "endTime": "2026-03-16T10:12:00-06:00"
+  }
+]
