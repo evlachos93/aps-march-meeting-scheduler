@@ -1,0 +1,20 @@
+{
+  "name": "@aps/scraper",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "schedule": "node dist/generateSchedule.js",
+    "sessions": "node dist/generateSessions.js",
+    "sessions:table": "node dist/generateSessionsWeekTable.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
