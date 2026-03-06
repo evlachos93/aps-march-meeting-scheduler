@@ -1,0 +1,85 @@
+import cors from "cors";
+import express from "express";
+import { buildIcs } from "./ics.js";
+import { addToSchedule, getTalks, getUserSchedule, removeFromSchedule } from "./store.js";
+
+const app = express();
+const port = Number(process.env.PORT ?? 8787);
+
+app.use(cors());
+app.use(express.json());
+
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, service: "aps-api" });
+});
+
+app.get("/talks", (req, res) => {
+  const q = String(req.query.q ?? "").trim().toLowerCase();
+  const topic = String(req.query.topic ?? "").trim().toLowerCase();
+  const track = String(req.query.track ?? "").trim().toLowerCase();
+
+  const filtered = getTalks().filter((talk) => {
+    const matchesQuery =
+      !q ||
+      talk.title.toLowerCase().includes(q) ||
+      talk.abstract.toLowerCase().includes(q) ||
+      talk.speakers.some((s) => s.toLowerCase().includes(q));
+    const matchesTopic = !topic || talk.topics.some((t) => t.toLowerCase() === topic);
+    const matchesTrack = !track || talk.track.toLowerCase() === track;
+    return matchesQuery && matchesTopic && matchesTrack;
+  });
+
+  res.json({ talks: filtered });
+});
+
+app.get("/schedule/:userId", (req, res) => {
+  const { userId } = req.params;
+  const talksById = new Map(getTalks().map((talk) => [talk.id, talk]));
+  const talks = getUserSchedule(userId)
+    .map((entry) => talksById.get(entry.talkId))
+    .filter((talk) => Boolean(talk));
+
+  res.json({ talks });
+});
+
+app.post("/schedule/:userId", (req, res) => {
+  const { userId } = req.params;
+  const talkId = String(req.body?.talkId ?? "").trim();
+  if (!talkId) {
+    return res.status(400).json({ error: "talkId is required" });
+  }
+
+  const talkExists = getTalks().some((talk) => talk.id === talkId);
+  if (!talkExists) {
+    return res.status(404).json({ error: "talk not found" });
+  }
+
+  const entry = addToSchedule(userId, talkId);
+  return res.status(201).json({ entry });
+});
+
+app.delete("/schedule/:userId/:talkId", (req, res) => {
+  const { userId, talkId } = req.params;
+  const removed = removeFromSchedule(userId, talkId);
+  if (!removed) {
+    return res.status(404).json({ error: "schedule entry not found" });
+  }
+  return res.status(204).send();
+});
+
+app.get("/schedule/:userId/export.ics", (req, res) => {
+  const { userId } = req.params;
+  const talksById = new Map(getTalks().map((talk) => [talk.id, talk]));
+  const talks = getUserSchedule(userId)
+    .map((entry) => talksById.get(entry.talkId))
+    .filter((talk): talk is NonNullable<typeof talk> => Boolean(talk));
+  const ics = buildIcs(userId, talks);
+
+  res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename=aps-schedule-${userId}.ics`);
+  res.send(ics);
+});
+
+app.listen(port, () => {
+  console.log(`API running on http://localhost:${port}`);
+});
