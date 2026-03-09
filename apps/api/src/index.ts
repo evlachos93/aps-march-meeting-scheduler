@@ -80,6 +80,17 @@ app.get("/schedule/:userId/export.ics", (req, res) => {
   res.send(ics);
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`API running on http://localhost:${port}`);
+});
+
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`Port ${port} is already in use.`);
+    console.error("Run `npm run stop:api` to stop the process using the API port.");
+    console.error("Or run with a different port: `PORT=8788 npm run dev:api`.");
+    process.exit(1);
+  }
+
+  throw err;
 });
