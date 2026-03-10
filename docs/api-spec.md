@@ -2,34 +2,33 @@
 
 ## Health
 
-- `GET /health`
+- `GET /health` → `{ ok: true, service: "aps-api" }`
 
 ## Talks
 
 - `GET /talks?q=<text>&topic=<topic>&track=<track>&sortBy=<time|title|track>`
+  - `q`: full-text search across title, abstract, and speakers
+  - `topic`: exact match against a `Talk.topics` entry (lowercase)
+  - `track`: exact match against `Talk.track` (e.g. `INVITED`, `FOCUS`, `ORAL`, `POSTER`)
+  - `sortBy`: `time` (default), `title`, or `track`
+  - → `{ talks: Talk[] }`
 
 ## Sessions
 
 - `GET /sessions?q=<text>&sessionType=<type>&sortBy=<time|title|code|talk-count>`
+  - `q`: full-text search across session code, title, type, room, and talk titles
+  - `sessionType`: exact match against `Session.sessionType`
+  - `sortBy`: `time` (default), `title`, `code`, or `talk-count`
+  - → `{ sessions: Session[] }`
 
 ## Topics
 
 - `GET /topics` — returns the list of filterable topics configured in `data/ui-topics.json`
-
-Response shape:
-```json
-{
-  "topics": [
-    { "label": "Error correction", "value": "error correction" }
-  ]
-}
-```
+  - → `{ topics: { label: string; value: string }[] }`
 
 ## Schedule
 
-- `GET /schedule/:userId`
-- `POST /schedule/:userId` with body `{ "talkId": "..." }`
-- `DELETE /schedule/:userId/:talkId`
-- `GET /schedule/:userId/export.ics`
-
-`.ics` response content type: `text/calendar; charset=utf-8`
+- `GET /schedule/:userId` → `{ talks: Talk[] }`
+- `POST /schedule/:userId` with body `{ "talkId": "..." }` → `{ talkId, addedAt }`
+- `DELETE /schedule/:userId/:talkId` → `204 No Content`
+- `GET /schedule/:userId/export.ics` → `text/calendar; charset=utf-8`

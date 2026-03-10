@@ -16,16 +16,20 @@ Lightweight tool for planning APS March Meeting 2026 attendance.
 npm install
 ```
 
-1. (Optional) Generate your own talk/session data with the scraper.
+2. (Optional) Generate your own talk/session data with the scraper.
 
-Talk list:
+Interesting talks/sessions already extracted and found in `data`. If
+you want to run your own scraper, then adjust your preferences in
+`data/session-preferences.txt` first and then run:
+
+### Scrape talks
 
 ```bash
 npm --workspace @aps/scraper run build
 npm --workspace @aps/scraper run start
 ```
 
-Sessions list based on `data/session-preferences.txt`:
+### Scrape sessions
 
 ```bash
 npm run generate:sessions
@@ -36,19 +40,23 @@ Generated files are written to:
 - `data/talks.json`
 - `data/sessions.json`
 
-1. Start the API server:
+3. (Optional) Filter data using LLM
+4. 
+5. 
+
+6. Start the API server:
 
 ```bash
 npm run dev:api
 ```
 
-1. Start the web app:
+4. Start the web app:
 
 ```bash
 npm run dev:web
 ```
 
-1. Open the web app URL shown by Vite (usually `http://localhost:5173`).
+5. Open the web app URL shown by Vite (usually `http://localhost:5173`).
 
 The web app reads data from the API, and the API serves local data files from `data/`.
 If your generated file names are the defaults above, they are ready to use with no extra step.
@@ -63,9 +71,16 @@ In short: run scraper -> start API -> open web app.
 
 ## Using the web app
 
-1. Use search and filters to find talks/sessions.
-2. Click `Add to My Schedule` on talks you want.
-3. Export `.ics` to import into your calendar.
+1. Use the **Talks** / **Sessions** toggle to switch views.
+2. Use the search box and filters to narrow results:
+   - **Topic** — populated from `data/ui-topics.json` (edit that file to customise the list)
+   - **Track** — `Invited`, `Focus`, `Oral`, `Poster` (talks view only)
+   - **Session type** — same values (sessions view only)
+   - **Sort** — start time, title, track (talks); start time, title, session code, talk count (sessions)
+3. Click **Find** to run the search. A result count is shown below the filters.
+4. Talk titles link directly to the APS talk page. Session codes link to the APS session page.
+5. Click **Add to My Schedule** on talks you want to keep.
+6. Click **Export .ics** to download a calendar file for your saved talks.
 
 ## Common commands
 

@@ -6,15 +6,30 @@
 - `title`: string
 - `abstract`: string
 - `speakers`: string[]
-- `track`: string
-- `topics`: string[]
+- `track`: string (`INVITED`, `FOCUS`, `ORAL`, `POSTER`)
+- `topics`: string[] (lowercase topic tags, e.g. `"error correction"`)
 - `room`: string
 - `startTime`: ISO-8601 with timezone offset
 - `endTime`: ISO-8601 with timezone offset
+- `sourceUrl?`: string (link to the APS talk page)
+
+## Session
+
+- `sessionCode`: string (e.g. `MAR-B07`)
+- `title`: string
+- `url`: string (link to the APS session page)
+- `sessionType`: string (`INVITED`, `FOCUS`, `ORAL`, `POSTER`)
+- `talkTitles`: string[]
+- `date?`: string (YYYY-MM-DD)
+- `weekday?`: string
+- `startTime?`: ISO-8601 with timezone offset
+- `endTime?`: ISO-8601 with timezone offset
+- `timeRange`: string (human-readable, e.g. `12:00 PM-2:36 PM`)
+- `room?`: string
+- `timingSource`: `"talks"` | `"none"`
 
 ## User schedule entry
 
-- `userId`: string
 - `talkId`: string
 - `addedAt`: ISO timestamp
 
