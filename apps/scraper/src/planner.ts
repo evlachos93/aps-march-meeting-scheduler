@@ -329,13 +329,13 @@ export function scoreTalk(talk: Talk, preferences: ParsedPreferences): { score: 
     }
 
     if (topicSet.has(normalizedPhrase)) {
-      score += 4;
+      score += 2;
       reasons.push(`topic match: ${normalizedPhrase}`);
       continue;
     }
 
     if (searchable.includes(normalizedPhrase)) {
-      score += 2;
+      score += 1;
       reasons.push(`keyword match: ${normalizedPhrase}`);
     }
   }
@@ -347,13 +347,13 @@ export function scoreTalk(talk: Talk, preferences: ParsedPreferences): { score: 
     }
 
     if (topicSet.has(normalizedPhrase)) {
-      score -= 6;
+      score -= 10;
       reasons.push(`avoid topic: ${normalizedPhrase}`);
       continue;
     }
 
     if (searchable.includes(normalizedPhrase)) {
-      score -= 4;
+      score -= 8;
       reasons.push(`avoid keyword: ${normalizedPhrase}`);
     }
   }

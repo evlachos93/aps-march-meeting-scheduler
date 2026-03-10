@@ -214,18 +214,18 @@ async function fetchEventMetadata(eventId: number): Promise<{ title?: string; ty
 function scoreSession(title: string, queryMatches: string[], preferences: ParsedPreferences): { score: number; reasons: string[] } {
   const lowerTitle = title.toLowerCase();
   const reasons: string[] = [];
-  let score = queryMatches.length * 3;
+  let score = queryMatches.length * 2;
 
   for (const phrase of preferences.preferredPhrases) {
     if (lowerTitle.includes(phrase.toLowerCase())) {
-      score += 2;
+      score += 1;
       reasons.push(`title contains: ${phrase}`);
     }
   }
 
   for (const phrase of preferences.avoidPhrases) {
     if (lowerTitle.includes(phrase.toLowerCase())) {
-      score -= 5;
+      score -= 10;
       reasons.push(`avoid phrase in title: ${phrase}`);
     }
   }
