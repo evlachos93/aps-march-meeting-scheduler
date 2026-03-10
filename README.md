@@ -1,122 +1,140 @@
 # APS Talk Scheduler
 
-Lightweight internal tool for planning APS March Meeting 2026 attendance.
+Lightweight tool for planning APS March Meeting 2026 attendance.
 
 ## Apps
 
-- `apps/api`: REST API for talks, schedules, and calendar export (`.ics`)
-- `apps/web`: mobile-first web UI (installable PWA foundation)
-- `apps/scraper`: APS ingestion pipeline scaffold
+- `apps/scraper`: generates talk/session data files from APS sources
+- `apps/api`: serves talks, schedules, and calendar export (`.ics`)
+- `apps/web`: mobile-first web UI for searching and building your schedule
 
-## Setup
+## Quick start
 
-1. Install dependencies.
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-2. Start the API server.
+2. (Optional) Generate your own talk/session data with the scraper.
 
-```bash
-npm run dev:api
-```
-
-To stop the API server (cross-platform, including Linux/macOS/Windows):
-
-```bash
-npm run stop:api
-```
-
-3. Start the web UI and point it at the API if necessary.
-
-```bash
-npm run dev:web
-```
-
-By default the API listens on `http://localhost:8787`, and the web client uses that origin, but you can override it when you start the web server:
-
-```bash
-VITE_API_BASE=http://localhost:8787 npm run dev:web
-```
-
-If API startup fails with `EADDRINUSE` (port already in use), run:
-
-```bash
-npm run stop:api
-```
-
-Then start it again, or use a different API port:
-
-```bash
-PORT=8788 npm run dev:api
-```
-
-The API currently serves the mock talk list in `data/talks.sample.json`, so anyone can explore the interface without running the scraper.
-
-## Simple guide
-
-1. With the API and web servers running, open the web UI in your browser (it is mobile-first and installable).
-2. Use the search box and topic filter to find talks you care about.
-3. Click “Add to My Schedule” to mark talks you want to attend.
-4. When you’re ready, hit the “Export .ics” button to download a calendar you can import into any planner.
-5. Repeat search/save steps as you refine your plan (no coding needed).
-
-## Scraper
-
-Run the APS scraper and write results to `data/talks.generated.json`:
+Talk list:
 
 ```bash
 npm --workspace @aps/scraper run build
 npm --workspace @aps/scraper run start
 ```
 
-Useful env vars:
-
-- `SCRAPER_MAX_EVENTS`: max number of schedule events to scan.
-- `SCRAPER_MEETING_PREFIX`: defaults to `MAR-` to keep March Meeting data.
-- `SCHEDULE_TIME_ZONE`: timezone used when formatting generated times (default: `America/Denver`).
-
-## Weekly schedule generation
-
-Describe topic preferences in natural language in `data/session-preferences.txt`, then generate a schedule from `data/talks.generated.json`:
-
-```bash
-npm run generate:schedule
-```
-
-Output is written to `data/schedule.generated.json`.
-
-Generate the full list of interesting sessions (no per-day cap and no conflict pruning):
+Sessions list based on `data/session-preferences.txt`:
 
 ```bash
 npm run generate:sessions
 ```
 
-Equivalent workspace commands:
+Generated files are written to:
+
+- `data/talks.json`
+- `data/sessions.json`
+
+1. Start the API server:
 
 ```bash
-npm --workspace @aps/scraper run build
-npm --workspace @aps/scraper run sessions
+npm run dev:api
 ```
 
-Note: `@aps/scraper:sessions` is not a valid workspace name. Use `@aps/scraper` as the workspace, then run the `sessions` script.
-
-This command queries `https://summit.aps.org/schedule/` using your preferred-topic phrases.
-Output is written to `data/sessions.generated.json`.
-
-Useful env vars for session generation:
-
-- `SESSIONS_EVENT_TYPES`: comma-separated session types to include first (default: `INVITED,FOCUS,ORAL`).
-- `SESSIONS_MAX_EVENTS`: max events to scan in APS metadata fallback mode.
-- `SESSIONS_SKIP_EVENT_INDEX=1`: skip APS event-index and remote event metadata fallback, and rely only on `data/talks.generated.json`.
-- `SCHEDULE_TIME_ZONE`: timezone used when formatting session times (default: `America/Denver`).
-
-Example (invited + focus only):
+4. Start the web app:
 
 ```bash
-SESSIONS_EVENT_TYPES=INVITED,FOCUS npm run generate:sessions
+npm run dev:web
 ```
+
+5. Open the web app URL shown by Vite (usually `http://localhost:5173`).
+
+The web app reads data from the API, and the API serves local data files from `data/`.
+If your generated file names are the defaults above, they are ready to use with no extra step.
+
+## How data flows into the web app
+
+1. `apps/scraper` fetches APS content and writes JSON files under `data/`.
+2. `apps/api` loads `data/sessions.json` and `data/talks.json` and exposes endpoints for the UI.
+3. `apps/web` calls the API and lets you search, filter, and add talks to your schedule.
+
+In short: run scraper -> start API -> open web app.
+
+## Using the web app
+
+1. Use search and filters to find talks/sessions.
+2. Click `Add to My Schedule` on talks you want.
+3. Export `.ics` to import into your calendar.
+
+## Common commands
+
+Stop the API server (Linux/macOS/Windows):
+
+```bash
+npm run stop:api
+```
+
+If API startup fails with `EADDRINUSE`:
+
+```bash
+npm run stop:api
+```
+
+Use a different API port:
+
+```bash
+PORT=8788 npm run dev:api
+```
+
+Point web to a non-default API:
+
+```bash
+VITE_API_BASE=http://localhost:8787 npm run dev:web
+```
+
+## Scraper options
+
+Talk scraping:
+
+- `SCRAPER_MAX_EVENTS`: max number of schedule events to scan.
+- `SCRAPER_EVENT_TYPES`: comma-separated event types (`INVITED,FOCUS`), labels (`Invited Session,Focus Session`), or `ALL`.
+- `SCRAPER_MEETING_PREFIX`: optional prefix filter for event codes.
+- `SCRAPER_OUTPUT_FILE`: output path (default: `data/talks.generated.json`).
+- `SCHEDULE_TIME_ZONE`: timezone for formatted times (default: `America/Denver`).
+
+Session generation:
+
+- `SCRAPER_EVENT_TYPES`: session types to include (codes, labels, or `ALL`).
+- `SCRAPER_MAX_EVENTS`: max events for APS metadata fallback mode.
+- `SESSIONS_SKIP_EVENT_INDEX=1`: skip APS event-index fallback and use local talks data only.
+- `SCRAPER_OUTPUT_FILE`: output path (default: `data/sessions.generated.json`).
+- `SCHEDULE_TIME_ZONE`: timezone for formatted times (default: `America/Denver`).
+
+Example:
+
+```bash
+SCRAPER_EVENT_TYPES=INVITED,FOCUS SCRAPER_MAX_EVENTS=500 npm run generate:sessions
+```
+
+`data/session-preferences.txt` can use natural language and explicit tags:
+
+```txt
+I want to focus on quantum hardware and trapped ions.
+tags: qec, superconducting qubits, quantum control
+preferredphrases: fault tolerance, logical qubit
+architectures: trapped ions, superconducting qubits, neutral atoms
+```
+
+## Extra generators
+
+Generate a weekly schedule JSON from preferences:
+
+```bash
+npm run generate:schedule
+```
+
+Output: `data/schedule.generated.json`.
 
 ## Confluence week table generation
 

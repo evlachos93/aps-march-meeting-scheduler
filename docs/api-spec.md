@@ -8,6 +8,10 @@
 
 - `GET /talks?q=<text>&topic=<topic>&track=<track>`
 
+## Sessions
+
+- `GET /sessions?q=<text>&sessionType=<type>&sortBy=<time|title|code|talk-count>`
+
 ## Schedule
 
 - `GET /schedule/:userId`
