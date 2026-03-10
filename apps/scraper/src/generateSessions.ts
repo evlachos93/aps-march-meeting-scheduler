@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getDayKey, parsePreferences, scoreTalk } from "./planner.js";
 import type { ParsedPreferences, Talk, TalksPayload } from "./planner.js";
+import { CONCURRENCY, mapConcurrent } from "./utils.js";
 
 type SessionItem = {
   sessionCode: string;
@@ -262,19 +263,16 @@ function talkLooksRelevantToQc(title: string, preferences: ParsedPreferences): b
 }
 
 async function fetchPresentationTitles(presentationIds: number[]): Promise<string[]> {
-  const titles: string[] = [];
-
-  for (const presentationId of presentationIds) {
-    try {
-      const presentation = await fetchJson<PresentationRecord>(`${APS_DATA_ROOT}/presentation/${presentationId}.json`);
-      if (presentation.title) {
-        titles.push(decodeHtml(presentation.title));
-      }
-    } catch {
-      continue;
-    }
-  }
-
+  const results = await Promise.allSettled(
+    presentationIds.map((id) =>
+      fetchJson<PresentationRecord>(`${APS_DATA_ROOT}/presentation/${id}.json`)
+    )
+  );
+  const titles = results
+    .filter((r): r is PromiseFulfilledResult<PresentationRecord> => r.status === "fulfilled")
+    .map((r) => r.value.title)
+    .filter(Boolean)
+    .map((t) => decodeHtml(t));
   return [...new Set(titles)];
 }
 
@@ -368,7 +366,6 @@ function buildSessionTimingIndex(talks: Talk[]): Map<string, SessionTiming> {
 }
 
 async function enrichSessionsWithTalkTitles(sessions: SessionItem[], preferences: ParsedPreferences): Promise<SessionItem[]> {
-  const enriched: SessionItem[] = [];
   const diagnostics = {
     inputSessions: sessions.length,
     droppedNoTalkTitles: 0,
@@ -379,44 +376,50 @@ async function enrichSessionsWithTalkTitles(sessions: SessionItem[], preferences
     outputSessions: 0
   };
 
-  for (const session of sessions) {
-    let talkTitles = session.talkTitles ?? [];
-    let presentationIds = session.presentationIds;
+  type EnrichedEntry = { session: SessionItem; presentationIds: number[] | undefined; talkTitles: string[] };
 
-    if ((!talkTitles || talkTitles.length === 0) && session.eventId) {
-      diagnostics.eventLookupsAttempted += 1;
-      try {
-        const event = await fetchJson<EventRecord>(`${APS_DATA_ROOT}/event/${session.eventId}.json`);
-        presentationIds = event.presentation_ids ?? presentationIds;
-      } catch {
-        diagnostics.eventLookupsFailed += 1;
-        // Keep best-effort behavior if event lookup fails.
+  const enrichResults = await mapConcurrent<SessionItem, EnrichedEntry | null>(
+    sessions,
+    CONCURRENCY,
+    async (session) => {
+      let talkTitles = session.talkTitles ?? [];
+      let presentationIds = session.presentationIds;
+
+      if ((!talkTitles || talkTitles.length === 0) && session.eventId) {
+        diagnostics.eventLookupsAttempted += 1;
+        try {
+          const event = await fetchJson<EventRecord>(`${APS_DATA_ROOT}/event/${session.eventId}.json`);
+          presentationIds = event.presentation_ids ?? presentationIds;
+        } catch {
+          diagnostics.eventLookupsFailed += 1;
+          // Keep best-effort behavior if event lookup fails.
+        }
       }
-    }
 
-    if ((!talkTitles || talkTitles.length === 0) && presentationIds?.length) {
-      diagnostics.presentationFetchesAttempted += 1;
-      talkTitles = await fetchPresentationTitles(presentationIds);
-    }
+      if ((!talkTitles || talkTitles.length === 0) && presentationIds?.length) {
+        diagnostics.presentationFetchesAttempted += 1;
+        talkTitles = await fetchPresentationTitles(presentationIds);
+      }
 
-    talkTitles = [...new Set((talkTitles ?? []).map((title) => decodeHtml(title)).filter(Boolean))];
-    if (talkTitles.length === 0) {
-      diagnostics.droppedNoTalkTitles += 1;
-      continue;
-    }
+      talkTitles = [...new Set((talkTitles ?? []).map((title) => decodeHtml(title)).filter(Boolean))];
+      if (talkTitles.length === 0) {
+        diagnostics.droppedNoTalkTitles += 1;
+        return null;
+      }
 
-    const hasQcTalk = talkTitles.some((title) => talkLooksRelevantToQc(title, preferences));
-    if (!hasQcTalk) {
-      diagnostics.droppedNoPreferredPhraseMatch += 1;
-      continue;
-    }
+      const hasQcTalk = talkTitles.some((title) => talkLooksRelevantToQc(title, preferences));
+      if (!hasQcTalk) {
+        diagnostics.droppedNoPreferredPhraseMatch += 1;
+        return null;
+      }
 
-    enriched.push({
-      ...session,
-      presentationIds,
-      talkTitles
-    });
-  }
+      return { session, presentationIds, talkTitles };
+    }
+  );
+
+  const enriched = enrichResults
+    .filter((r): r is EnrichedEntry => r !== null)
+    .map(({ session, presentationIds, talkTitles }) => ({ ...session, presentationIds, talkTitles }));
 
   diagnostics.outputSessions = enriched.length;
   console.log("session enrichment diagnostics", diagnostics);
@@ -495,18 +498,24 @@ async function buildFallbackSessionsFromEventIndex(preferences: ParsedPreference
   const maxEvents = Number(process.env.SCRAPER_MAX_EVENTS ?? eventIds.length);
 
   const sessionsByCode = new Map<string, SessionItem>();
-  let eventFetchErrors = 0;
   let skippedByEventType = 0;
   let skippedByScore = 0;
 
-  for (const eventId of eventIds.slice(0, maxEvents)) {
-    let event: EventRecord;
-    try {
-      event = await fetchJson<EventRecord>(`${APS_DATA_ROOT}/event/${eventId}.json`);
-    } catch {
-      eventFetchErrors += 1;
-      continue;
+  const fetchedEvents = await mapConcurrent(
+    eventIds.slice(0, maxEvents),
+    CONCURRENCY,
+    async (eventId): Promise<EventRecord | null> => {
+      try {
+        return await fetchJson<EventRecord>(`${APS_DATA_ROOT}/event/${eventId}.json`);
+      } catch {
+        return null;
+      }
     }
+  );
+
+  const eventFetchErrors = fetchedEvents.filter((e) => e === null).length;
+  for (const event of fetchedEvents) {
+    if (!event) continue;
 
     if (!event.code || (meetingPrefix && !event.code.toUpperCase().startsWith(meetingPrefix))) {
       continue;
@@ -622,21 +631,33 @@ async function buildFallbackSessionsFromTalks(
   }
 
   if (!skipRemoteEventMetadata) {
-    const eventMetadataCache = new Map<number, { title?: string; type?: string }>();
-    for (const [sessionCode, session] of bySessionCode.entries()) {
-      const eventId = eventIdBySessionCode.get(sessionCode);
-      if (!eventId) {
-        continue;
-      }
+    const uniqueEventIds = [
+      ...new Set(
+        [...bySessionCode.keys()]
+          .map((code) => eventIdBySessionCode.get(code))
+          .filter((id): id is number => id !== undefined)
+      )
+    ];
 
-      if (!eventMetadataCache.has(eventId)) {
+    const fetchedMetadata = await mapConcurrent(
+      uniqueEventIds,
+      CONCURRENCY,
+      async (eventId): Promise<{ eventId: number; meta: { title?: string; type?: string } }> => {
         try {
-          eventMetadataCache.set(eventId, await fetchEventMetadata(eventId));
+          return { eventId, meta: await fetchEventMetadata(eventId) };
         } catch {
-          eventMetadataCache.set(eventId, {});
+          return { eventId, meta: {} };
         }
       }
+    );
 
+    const eventMetadataCache = new Map<number, { title?: string; type?: string }>(
+      fetchedMetadata.map(({ eventId, meta }) => [eventId, meta])
+    );
+
+    for (const [sessionCode, session] of bySessionCode.entries()) {
+      const eventId = eventIdBySessionCode.get(sessionCode);
+      if (!eventId) continue;
       const metadata = eventMetadataCache.get(eventId);
       if (metadata?.title) {
         session.title = metadata.title;

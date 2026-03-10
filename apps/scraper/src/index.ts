@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CONCURRENCY, mapConcurrent } from "./utils.js";
 
 const DATA_ROOT = "https://makoshark-data.aps.org/441";
 const EVENT_INDEX_URL = `${DATA_ROOT}/_ndx/meeting/sort-event-by-time.json`;
@@ -310,53 +311,73 @@ function toTalk(record: PresentationRecord, event: EventRecord, room: string): T
   };
 }
 
+async function processEvent(
+  eventId: number,
+  allowedTypes: Set<string>
+): Promise<{ relevant: boolean; talks: Talk[] } | null> {
+  let event: EventRecord;
+  try {
+    event = await fetchJson<EventRecord>(`${DATA_ROOT}/event/${eventId}.json`);
+  } catch (error) {
+    console.warn(`event failed: ${eventId}`, error);
+    return null;
+  }
+
+  if (!event.presentation_ids?.length) {
+    return { relevant: false, talks: [] };
+  }
+
+  // Filter by session type before any presentation-level scraping.
+  if (!eventTypeAllowed(event.type, allowedTypes)) {
+    return { relevant: false, talks: [] };
+  }
+
+  if (!eventLooksRelevant(event)) {
+    return { relevant: false, talks: [] };
+  }
+
+  const room = await getLocationLabel(event.location_ids);
+
+  const presentationResults = await Promise.allSettled(
+    event.presentation_ids.map((presentationId) =>
+      fetchJson<PresentationRecord>(`${DATA_ROOT}/presentation/${presentationId}.json`)
+    )
+  );
+
+  const talks: Talk[] = [];
+  for (let i = 0; i < presentationResults.length; i++) {
+    const result = presentationResults[i]!;
+    if (result.status === "rejected") {
+      console.warn(`presentation failed: ${event.presentation_ids[i]}`, result.reason);
+      continue;
+    }
+    if (talkLooksInteresting(result.value, event)) {
+      talks.push(toTalk(result.value, event, room));
+    }
+  }
+
+  return { relevant: true, talks };
+}
+
 async function runScrape(): Promise<ScrapeResult> {
   const indexPayload = await fetchJson<Record<string, number>>(EVENT_INDEX_URL);
   const eventIds = extractEventIds(indexPayload);
   const maxEvents = Number(process.env.SCRAPER_MAX_EVENTS ?? eventIds.length);
   const allowedTypes = parseEventTypeFilter();
 
-  // Talks scraping is discovery-only: do not apply per-day/time-window planning constraints.
-  // Those constraints are only for schedule planning, not data collection.
+  const results = await mapConcurrent(
+    eventIds.slice(0, maxEvents),
+    CONCURRENCY,
+    (eventId) => processEvent(eventId, allowedTypes)
+  );
 
   const talks: Talk[] = [];
   let relevantEventCount = 0;
-
-  for (const eventId of eventIds.slice(0, maxEvents)) {
-    let event: EventRecord;
-    try {
-      event = await fetchJson<EventRecord>(`${DATA_ROOT}/event/${eventId}.json`);
-    } catch (error) {
-      console.warn(`event failed: ${eventId}`, error);
-      continue;
-    }
-
-    if (!event.presentation_ids?.length) {
-      continue;
-    }
-
-    // Filter by session type before any presentation-level scraping.
-    if (!eventTypeAllowed(event.type, allowedTypes)) {
-      continue;
-    }
-
-    if (!eventLooksRelevant(event)) {
-      continue;
-    }
-
-    relevantEventCount += 1;
-    const room = await getLocationLabel(event.location_ids);
-
-    for (const presentationId of event.presentation_ids) {
-      try {
-        const presentation = await fetchJson<PresentationRecord>(`${DATA_ROOT}/presentation/${presentationId}.json`);
-        if (!talkLooksInteresting(presentation, event)) {
-          continue;
-        }
-        talks.push(toTalk(presentation, event, room));
-      } catch (error) {
-        console.warn(`presentation failed: ${presentationId}`, error);
-      }
+  for (const result of results) {
+    if (!result) continue;
+    if (result.relevant) {
+      relevantEventCount += 1;
+      talks.push(...result.talks);
     }
   }
 
