@@ -805,7 +805,6 @@ async function run(): Promise<void> {
         reasons: [...new Set([...session.reasons, ...reasons])]
       };
     })
-    .filter((session) => session.score > 0)
     .sort((a, b) => {
       if (b.score !== a.score) {
         return b.score - a.score;
@@ -815,7 +814,8 @@ async function run(): Promise<void> {
 
   console.log("session scoring diagnostics", {
     candidateSessionsBeforeScoreFilter: sessionsByCode.size,
-    candidateSessionsAfterScoreFilter: sessions.length
+    candidateSessionsAfterScoreFilter: sessions.length,
+    note: "No score-based filtering applied; talk-title preferred-phrase filtering happens during enrichment"
   });
 
   const qcRelevantSessions = await enrichSessionsWithTalkTitles(sessions, preferences);
