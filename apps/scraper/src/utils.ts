@@ -1,4 +1,17 @@
-export const CONCURRENCY = Number(process.env.SCRAPER_CONCURRENCY ?? 10);
+import { config } from "dotenv";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+config({ path: resolve(WORKSPACE_ROOT, ".env") });
+
+const rawConcurrency = process.env.SCRAPER_CONCURRENCY;
+export const CONCURRENCY = Number(rawConcurrency ?? 10);
+console.log("scraper concurrency", {
+  configuredValue: rawConcurrency ?? "<unset>",
+  envPath: resolve(WORKSPACE_ROOT, ".env"),
+  activeWorkers: CONCURRENCY
+});
 
 /**
  * Processes `items` with at most `concurrency` async workers running simultaneously.

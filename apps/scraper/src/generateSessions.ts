@@ -56,10 +56,11 @@ const PREFERENCES_PATH = new URL("../../../data/session-preferences.txt", import
 const DEFAULT_OUTPUT_RELATIVE = "data/sessions.json";
 const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
-const LLM_API_URL = process.env.SESSIONS_LLM_API_URL ?? "https://api.githubcopilot.com/chat/completions";
+const LLM_API_URL = process.env.SESSIONS_LLM_API_URL?.trim();
 const LLM_MODEL = process.env.SESSIONS_LLM_MODEL ?? "gpt-4o-mini";
 const LLM_BATCH_SIZE = Math.max(1, Number(process.env.SESSIONS_LLM_BATCH_SIZE ?? 20));
-const LLM_CONCURRENCY = 3;
+const LLM_CONCURRENCY = 1;
+const LLM_API_KEY = process.env.SESSIONS_LLM_API_KEY?.trim();
 
 function getOutputPath(): string {
   const configured = process.env.SCRAPER_OUTPUT_FILE?.trim();
@@ -277,14 +278,20 @@ function talkLooksRelevantToQc(title: string, preferences: ParsedPreferences): b
 }
 
 async function fetchPresentationTitles(presentationIds: number[]): Promise<string[]> {
-  const results = await Promise.allSettled(
-    presentationIds.map((id) =>
-      fetchJson<PresentationRecord>(`${APS_DATA_ROOT}/presentation/${id}.json`)
-    )
+  const results = await mapConcurrent(
+    presentationIds,
+    CONCURRENCY,
+    async (id) => {
+      try {
+        return await fetchJson<PresentationRecord>(`${APS_DATA_ROOT}/presentation/${id}.json`);
+      } catch {
+        return null;
+      }
+    }
   );
   const titles = results
-    .filter((r): r is PromiseFulfilledResult<PresentationRecord> => r.status === "fulfilled")
-    .map((r) => r.value.title)
+    .filter((r): r is PresentationRecord => r !== null)
+    .map((r) => r.title)
     .filter(Boolean)
     .map((t) => decodeHtml(t));
   return [...new Set(titles)];
@@ -716,7 +723,9 @@ type LLMDecision = { sessionCode: string; relevant: boolean; reason: string };
 async function classifySessionBatch(
   batch: SessionItem[],
   preferences: ParsedPreferences,
-  apiKey: string
+  apiUrl: string,
+  apiKey: string,
+  model: string
 ): Promise<LLMDecision[]> {
   const interested = preferences.preferredPhrases.slice(0, 25).join(", ");
   const avoid = preferences.avoidPhrases.slice(0, 25).join(", ");
@@ -738,11 +747,11 @@ async function classifySessionBatch(
     `- When genuinely uncertain, mark as relevant.\n\n` +
     `Respond ONLY with valid JSON (no markdown fences): {"decisions": [{"sessionCode": "...", "relevant": true, "reason": "brief reason"}, ...]}`;
 
-  const response = await fetch(LLM_API_URL, {
+  const response = await fetch(apiUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: LLM_MODEL,
+      model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: JSON.stringify(sessions) }
@@ -774,27 +783,29 @@ async function classifySessionBatch(
 
 async function filterSessionsWithLLM(
   sessions: SessionItem[],
-  preferences: ParsedPreferences
+  preferences: ParsedPreferences,
+  apiUrl: string,
+  apiKey: string,
+  model: string
 ): Promise<SessionItem[]> {
-  const apiKey = (process.env.GITHUB_TOKEN ?? process.env.OPENAI_API_KEY)?.trim();
-  if (!apiKey) {
-    console.warn("LLM filter skipped: GITHUB_TOKEN (or OPENAI_API_KEY) not set");
-    return sessions;
-  }
-
   const batches: SessionItem[][] = [];
   for (let i = 0; i < sessions.length; i += LLM_BATCH_SIZE) {
     batches.push(sessions.slice(i, i + LLM_BATCH_SIZE));
   }
 
-  console.log("LLM filter start", { sessions: sessions.length, batches: batches.length, model: LLM_MODEL, batchSize: LLM_BATCH_SIZE });
+  console.log("LLM filter start", {
+    sessions: sessions.length,
+    batches: batches.length,
+    model,
+    batchSize: LLM_BATCH_SIZE
+  });
 
   const decisionMap = new Map<string, boolean>();
   let failedBatches = 0;
 
   const batchResults = await mapConcurrent(batches, LLM_CONCURRENCY, async (batch) => {
     try {
-      return await classifySessionBatch(batch, preferences, apiKey);
+      return await classifySessionBatch(batch, preferences, apiUrl, apiKey, model);
     } catch (err) {
       console.warn("LLM batch failed, keeping sessions", err instanceof Error ? err.message : String(err));
       failedBatches += 1;
@@ -919,18 +930,22 @@ async function run(): Promise<void> {
     note: "No score-based filtering applied; talk-title preferred-phrase filtering happens during enrichment"
   });
 
-  stageStart = performance.now();
-  const enrichedSessions = await enrichSessionsWithTalkTitles(sessions, preferences);
-  console.log(`stage [enrichment] done in ${elapsed(stageStart)} — ${enrichedSessions.length} sessions`);
-
-  let qcRelevantSessions: SessionItem[];
+  // Run LLM filter before enrichment so we only pay the enrichment cost
+  // (presentation-title network fetches) for sessions that survive LLM screening.
+  let sessionsToEnrich = sessions;
   if (process.env.SESSIONS_LLM_FILTER === "1") {
-    stageStart = performance.now();
-    qcRelevantSessions = await filterSessionsWithLLM(enrichedSessions, preferences);
-    console.log(`stage [llm-filter] done in ${elapsed(stageStart)} — ${qcRelevantSessions.length} sessions`);
-  } else {
-    qcRelevantSessions = enrichedSessions;
+    if (LLM_API_URL && LLM_API_KEY) {
+      stageStart = performance.now();
+      sessionsToEnrich = await filterSessionsWithLLM(sessions, preferences, LLM_API_URL, LLM_API_KEY, LLM_MODEL);
+      console.log(`stage [llm-filter] done in ${elapsed(stageStart)} — ${sessionsToEnrich.length} sessions`);
+    } else {
+      console.warn("LLM filter skipped: API key/url not set; skipping llm filtering");
+    }
   }
+
+  stageStart = performance.now();
+  const qcRelevantSessions = await enrichSessionsWithTalkTitles(sessionsToEnrich, preferences);
+  console.log(`stage [enrichment] done in ${elapsed(stageStart)} — ${qcRelevantSessions.length} sessions`);
 
   const outputPath = getOutputPath();
   const output: GeneratedSessions = {
