@@ -11,7 +11,9 @@
     "sessions": "node dist/generateSessions.js",
     "sessions:table": "node dist/generateSessionsWeekTable.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "dotenv": "^16.4.6"
+  },
   "devDependencies": {
     "@types/node": "^22.13.10",
     "tsx": "^4.19.3",
