@@ -1,4 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { getDayKey, parsePreferences, scoreTalk } from "./planner.js";
 import type { ParsedPreferences, Talk, TalksPayload } from "./planner.js";
 
@@ -48,9 +50,16 @@ type GeneratedSessions = {
 const SCHEDULE_BASE_URL = "https://summit.aps.org/schedule/";
 const APS_DATA_ROOT = "https://makoshark-data.aps.org/441";
 const EVENT_INDEX_URL = `${APS_DATA_ROOT}/_ndx/meeting/sort-event-by-time.json`;
-const TALKS_PATH = new URL("../../../data/talks.generated.json", import.meta.url);
+const TALKS_PATH = new URL("../../../data/talks.json", import.meta.url);
 const PREFERENCES_PATH = new URL("../../../data/session-preferences.txt", import.meta.url);
-const OUTPUT_PATH = new URL("../../../data/sessions.generated.json", import.meta.url);
+const DEFAULT_OUTPUT_RELATIVE = "data/sessions.json";
+const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+function getOutputPath(): string {
+  const configured = process.env.SCRAPER_OUTPUT_FILE?.trim();
+  const target = configured && configured.length > 0 ? configured : DEFAULT_OUTPUT_RELATIVE;
+  return resolve(WORKSPACE_ROOT, target);
+}
 
 type EventRecord = {
   id: number;
@@ -68,33 +77,45 @@ type PresentationRecord = {
   title: string;
 };
 
-const QC_TALK_KEYWORDS = [
-  "qubit",
-  "quantum computing",
-  "error correction",
-  "fault tolerance",
-  "readout",
-  "calibration",
-  "coherence",
-  "decoherence",
-  "superconduct",
-  "trapped ion",
-  "neutral atom",
-  "spin qubit",
-  "quantum control",
-  "quantum processor",
-  "quantum hardware",
-  "logical qubit",
-  "qec",
-  "gate",
-  "compiler",
-  "benchmark",
-  "quantum algorithm",
-  "quantum simulation"
+const DEFAULT_SESSION_TYPES = [
+  "ACTIVITY",
+  "BUSINESSMEETING",
+  "ORAL",
+  "FOCUS",
+  "INTERACT",
+  "INVITED",
+  "MINISYMPOSIUM",
+  "OPENROUNDTABLE",
+  "PANEL",
+  "POSTER",
+  "RECEPTION",
+  "TOWNHALL",
+  "TUTORIAL",
+  "WORKSHOP"
 ];
-
-const DEFAULT_SESSION_TYPES = ["INVITED", "FOCUS", "ORAL"];
 const MEETING_TIME_ZONE = process.env.SCHEDULE_TIME_ZONE ?? "America/Denver";
+const EVENT_TYPE_ALIASES: Record<string, string> = {
+  ACTIVITY: "ACTIVITY",
+  ANCILLARYEVENT: "ACTIVITY",
+  BUSINESSMEETING: "BUSINESSMEETING",
+  CONTRIBUTEDSESSION: "ORAL",
+  ORAL: "ORAL",
+  FOCUSSESSION: "FOCUS",
+  FOCUS: "FOCUS",
+  INTERACTSESSION: "INTERACT",
+  INTERACT: "INTERACT",
+  INVITEDSESSION: "INVITED",
+  INVITED: "INVITED",
+  MINISYMPOSIUM: "MINISYMPOSIUM",
+  OPENROUNDTABLE: "OPENROUNDTABLE",
+  PANEL: "PANEL",
+  POSTERSESSION: "POSTER",
+  POSTER: "POSTER",
+  RECEPTION: "RECEPTION",
+  TOWNHALL: "TOWNHALL",
+  TUTORIAL: "TUTORIAL",
+  WORKSHOP: "WORKSHOP"
+};
 const SCHEDULE_EVENT_TYPE_LABELS: Record<string, string> = {
   INVITED: "Invited Session",
   FOCUS: "Focus Session",
@@ -103,9 +124,26 @@ const SCHEDULE_EVENT_TYPE_LABELS: Record<string, string> = {
   WORKSHOP: "Workshop",
   TUTORIAL: "Tutorial",
   PANEL: "Panel",
+  BUSINESSMEETING: "Business Meeting",
+  INTERACT: "Interact Session",
+  MINISYMPOSIUM: "Mini-Symposium",
+  OPENROUNDTABLE: "Open Roundtable",
+  RECEPTION: "Reception",
+  TOWNHALL: "Town Hall",
   ANCILLARYEVENT: "Activity",
   ACTIVITY: "Activity"
 };
+
+function toDiscoveryPreferences(preferences: ParsedPreferences): ParsedPreferences {
+  return {
+    ...preferences,
+    // Session discovery should never be constrained by per-day planning limits.
+    maxTalksPerDay: Number.MAX_SAFE_INTEGER,
+    dayStartMinutes: undefined,
+    dayEndMinutes: undefined,
+    minBreakMinutes: 0
+  };
+}
 
 function decodeHtml(text: string): string {
   return text
@@ -118,18 +156,31 @@ function decodeHtml(text: string): string {
     .trim();
 }
 
+function normalizeEventTypeToken(value: string): string {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function canonicalizeEventType(value: string | undefined): string {
+  const normalized = normalizeEventTypeToken(value ?? "");
+  return EVENT_TYPE_ALIASES[normalized] ?? normalized;
+}
+
 function parseSessionTypeFilter(): Set<string> {
-  const raw = process.env.SESSIONS_EVENT_TYPES?.trim();
+  const raw = process.env.SCRAPER_EVENT_TYPES?.trim();
   const source = raw ? raw.split(",") : DEFAULT_SESSION_TYPES;
-  return new Set(
-    source
-      .map((value) => value.trim().toUpperCase())
-      .filter((value) => value.length > 0)
-  );
+  const normalized = source
+    .map((value) => canonicalizeEventType(value.trim()))
+    .filter((value) => value.length > 0);
+
+  if (normalized.includes("ALL")) {
+    return new Set(DEFAULT_SESSION_TYPES);
+  }
+
+  return new Set(normalized);
 }
 
 function sessionTypeAllowed(sessionType: string | undefined, allowedTypes: Set<string>): boolean {
-  const normalized = (sessionType ?? "UNKNOWN").toUpperCase();
+  const normalized = canonicalizeEventType(sessionType ?? "UNKNOWN");
   return allowedTypes.has(normalized);
 }
 
@@ -227,10 +278,7 @@ function normalizePhraseForTalkFilter(phrase: string): string | undefined {
 function talkLooksRelevantToQc(title: string, preferences: ParsedPreferences): boolean {
   const lower = title.toLowerCase();
 
-  if (QC_TALK_KEYWORDS.some((keyword) => lower.includes(keyword))) {
-    return true;
-  }
-
+  // A session is interesting when any talk title matches preferred phrases.
   for (const phrase of preferences.preferredPhrases) {
     const normalized = normalizePhraseForTalkFilter(phrase);
     if (normalized && lower.includes(normalized)) {
@@ -349,31 +397,45 @@ function buildSessionTimingIndex(talks: Talk[]): Map<string, SessionTiming> {
 
 async function enrichSessionsWithTalkTitles(sessions: SessionItem[], preferences: ParsedPreferences): Promise<SessionItem[]> {
   const enriched: SessionItem[] = [];
+  const diagnostics = {
+    inputSessions: sessions.length,
+    droppedNoTalkTitles: 0,
+    droppedNoPreferredPhraseMatch: 0,
+    eventLookupsAttempted: 0,
+    eventLookupsFailed: 0,
+    presentationFetchesAttempted: 0,
+    outputSessions: 0
+  };
 
   for (const session of sessions) {
     let talkTitles = session.talkTitles ?? [];
     let presentationIds = session.presentationIds;
 
     if ((!talkTitles || talkTitles.length === 0) && session.eventId) {
+      diagnostics.eventLookupsAttempted += 1;
       try {
         const event = await fetchJson<EventRecord>(`${APS_DATA_ROOT}/event/${session.eventId}.json`);
         presentationIds = event.presentation_ids ?? presentationIds;
       } catch {
+        diagnostics.eventLookupsFailed += 1;
         // Keep best-effort behavior if event lookup fails.
       }
     }
 
     if ((!talkTitles || talkTitles.length === 0) && presentationIds?.length) {
+      diagnostics.presentationFetchesAttempted += 1;
       talkTitles = await fetchPresentationTitles(presentationIds);
     }
 
     talkTitles = [...new Set((talkTitles ?? []).map((title) => decodeHtml(title)).filter(Boolean))];
     if (talkTitles.length === 0) {
+      diagnostics.droppedNoTalkTitles += 1;
       continue;
     }
 
     const hasQcTalk = talkTitles.some((title) => talkLooksRelevantToQc(title, preferences));
     if (!hasQcTalk) {
+      diagnostics.droppedNoPreferredPhraseMatch += 1;
       continue;
     }
 
@@ -383,6 +445,9 @@ async function enrichSessionsWithTalkTitles(sessions: SessionItem[], preferences
       talkTitles
     });
   }
+
+  diagnostics.outputSessions = enriched.length;
+  console.log("session enrichment diagnostics", diagnostics);
 
   return enriched;
 }
@@ -508,16 +573,20 @@ function scoreEvent(event: EventRecord, preferences: ParsedPreferences): { score
 async function buildFallbackSessionsFromEventIndex(preferences: ParsedPreferences, allowedTypes: Set<string>): Promise<SessionItem[]> {
   const indexPayload = await fetchJson<Record<string, number>>(EVENT_INDEX_URL);
   const eventIds = extractEventIds(indexPayload);
-  const meetingPrefix = (process.env.SCRAPER_MEETING_PREFIX ?? "MAR-").toUpperCase();
-  const maxEvents = Number(process.env.SESSIONS_MAX_EVENTS ?? eventIds.length);
+  const meetingPrefix = (process.env.SCRAPER_MEETING_PREFIX ?? "").trim().toUpperCase();
+  const maxEvents = Number(process.env.SCRAPER_MAX_EVENTS ?? eventIds.length);
 
   const sessionsByCode = new Map<string, SessionItem>();
+  let eventFetchErrors = 0;
+  let skippedByEventType = 0;
+  let skippedByScore = 0;
 
   for (const eventId of eventIds.slice(0, maxEvents)) {
     let event: EventRecord;
     try {
       event = await fetchJson<EventRecord>(`${APS_DATA_ROOT}/event/${eventId}.json`);
     } catch {
+      eventFetchErrors += 1;
       continue;
     }
 
@@ -528,11 +597,13 @@ async function buildFallbackSessionsFromEventIndex(preferences: ParsedPreference
       continue;
     }
     if (!sessionTypeAllowed(event.type, allowedTypes)) {
+      skippedByEventType += 1;
       continue;
     }
 
     const { score, matchedQueries } = scoreEvent(event, preferences);
     if (score <= 0) {
+      skippedByScore += 1;
       continue;
     }
 
@@ -556,6 +627,14 @@ async function buildFallbackSessionsFromEventIndex(preferences: ParsedPreference
     });
   }
 
+  console.log("event-index fallback diagnostics", {
+    eventIdsConsidered: Math.min(eventIds.length, maxEvents),
+    eventFetchErrors,
+    skippedByEventType,
+    skippedByScore,
+    outputSessions: sessionsByCode.size
+  });
+
   return [...sessionsByCode.values()];
 }
 
@@ -567,22 +646,30 @@ async function buildFallbackSessionsFromTalks(
   const skipRemoteEventMetadata = process.env.SESSIONS_SKIP_EVENT_INDEX === "1";
   const bySessionCode = new Map<string, SessionItem>();
   const eventIdBySessionCode = new Map<string, number>();
+  let skippedMissingSourceUrl = 0;
+  let skippedMissingSessionCode = 0;
+  let skippedByScore = 0;
+  let skippedByEventType = 0;
 
   for (const talk of talks) {
     if (!talk.sourceUrl) {
+      skippedMissingSourceUrl += 1;
       continue;
     }
 
     const sessionCode = normalizeSessionCode(talk.sourceUrl);
     if (!sessionCode) {
+      skippedMissingSessionCode += 1;
       continue;
     }
 
     const { score, reasons } = scoreTalk(talk, preferences);
     if (score <= 0) {
+      skippedByScore += 1;
       continue;
     }
     if (!sessionTypeAllowed(talk.track, allowedTypes)) {
+      skippedByEventType += 1;
       continue;
     }
 
@@ -648,6 +735,15 @@ async function buildFallbackSessionsFromTalks(
     console.warn("remote event metadata skipped via SESSIONS_SKIP_EVENT_INDEX=1");
   }
 
+  console.log("talks fallback diagnostics", {
+    talksInput: talks.length,
+    skippedMissingSourceUrl,
+    skippedMissingSessionCode,
+    skippedByScore,
+    skippedByEventType,
+    outputSessions: bySessionCode.size
+  });
+
   return [...bySessionCode.values()];
 }
 
@@ -656,12 +752,12 @@ async function run(): Promise<void> {
   const preferencesRaw = await readFile(PREFERENCES_PATH, "utf-8");
   const talksPayload = JSON.parse(talksPayloadRaw) as TalksPayload;
   if (!Array.isArray(talksPayload.talks) || talksPayload.talks.length === 0) {
-    throw new Error("No talks found in talks.generated.json. Run scraper first.");
+    throw new Error("No talks found in data/talks.json. Run scraper first.");
   }
 
   const sessionTimingIndex = buildSessionTimingIndex(talksPayload.talks);
 
-  const preferences = parsePreferences(preferencesRaw);
+  const preferences = toDiscoveryPreferences(parsePreferences(preferencesRaw));
   const queries = [...new Set(preferences.preferredPhrases.map((phrase) => phrase.trim()).filter((phrase) => phrase.length >= 3))];
   const allowedTypes = parseSessionTypeFilter();
   const scheduleEventTypeParams = getScheduleEventTypeParams(allowedTypes);
@@ -671,13 +767,41 @@ async function run(): Promise<void> {
   let fallbackSource = "";
   const skipEventIndexFallback = process.env.SESSIONS_SKIP_EVENT_INDEX === "1";
 
-  try {
-    for (const query of queries) {
+  console.log("session generation start", {
+    talksCount: talksPayload.talks.length,
+    preferredPhraseCount: preferences.preferredPhrases.length,
+    queryCount: queries.length,
+    allowedSessionTypes: [...allowedTypes],
+    skipEventIndexFallback
+  });
+
+  let failedQueryCount = 0;
+  let successfulQueryCount = 0;
+  let scheduleSessionsAdded = 0;
+  for (const query of queries) {
+    try {
+      const beforeSize = sessionsByCode.size;
       const html = await fetchScheduleSearchHtml(query, scheduleEventTypeParams);
       extractSessionsFromHtml(html, query, sessionsByCode);
+      const added = sessionsByCode.size - beforeSize;
+      scheduleSessionsAdded += Math.max(added, 0);
+      successfulQueryCount += 1;
+    } catch (error) {
+      failedQueryCount += 1;
+      console.warn("schedule query failed; continuing", { query, error });
     }
-  } catch (error) {
-    console.warn("schedule fetch failed, using talks fallback", error);
+  }
+
+  console.log("schedule search diagnostics", {
+    totalQueries: queries.length,
+    successfulQueryCount,
+    failedQueryCount,
+    uniqueSessionsFromSchedule: sessionsByCode.size,
+    scheduleSessionsAdded
+  });
+
+  if (failedQueryCount === queries.length && queries.length > 0) {
+    console.warn("all schedule queries failed; using fallback sources");
     usedFallback = true;
   }
 
@@ -721,13 +845,19 @@ async function run(): Promise<void> {
       return a.sessionCode.localeCompare(b.sessionCode);
     });
 
+  console.log("session scoring diagnostics", {
+    candidateSessionsBeforeScoreFilter: sessionsByCode.size,
+    candidateSessionsAfterScoreFilter: sessions.length
+  });
+
   const qcRelevantSessions = await enrichSessionsWithTalkTitles(sessions, preferences);
 
+  const outputPath = getOutputPath();
   const output: GeneratedSessions = {
     generatedAt: new Date().toISOString(),
     source: "APS Summit schedule search",
     sourceUrl: SCHEDULE_BASE_URL,
-    fallbackSourceTalkFile: usedFallback && fallbackSource === "talks-generated" ? "data/talks.generated.json" : undefined,
+    fallbackSourceTalkFile: usedFallback && fallbackSource === "talks-generated" ? "data/talks.json" : undefined,
     preferencesFile: "data/session-preferences.txt",
     parsedPreferences: preferences,
     summary: {
@@ -758,8 +888,8 @@ async function run(): Promise<void> {
     })
   };
 
-  await mkdir(new URL("../../../data/", import.meta.url), { recursive: true });
-  await writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`, "utf-8");
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, `${JSON.stringify(output, null, 2)}\n`, "utf-8");
 
   console.log("sessions generated", {
     totalInterestingSessions: output.summary.totalInterestingSessions,
@@ -767,7 +897,7 @@ async function run(): Promise<void> {
     usedFallback: output.summary.usedFallback,
     fallbackSource,
     sessionTypes: [...allowedTypes],
-    outputPath: OUTPUT_PATH.pathname
+    outputPath
   });
 }
 

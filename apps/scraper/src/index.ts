@@ -1,9 +1,51 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const DATA_ROOT = "https://makoshark-data.aps.org/441";
 const EVENT_INDEX_URL = `${DATA_ROOT}/_ndx/meeting/sort-event-by-time.json`;
-const OUTPUT_PATH = new URL("../../../data/talks.generated.json", import.meta.url);
-const DEFAULT_MEETING_PREFIX = "MAR-";
+const DEFAULT_OUTPUT_RELATIVE = "data/talks.generated.json";
+const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const DEFAULT_MEETING_PREFIX = "";
+const DEFAULT_EVENT_TYPES = [
+  "ACTIVITY",
+  "BUSINESSMEETING",
+  "ORAL",
+  "FOCUS",
+  "INTERACT",
+  "INVITED",
+  "MINISYMPOSIUM",
+  "OPENROUNDTABLE",
+  "PANEL",
+  "POSTER",
+  "RECEPTION",
+  "TOWNHALL",
+  "TUTORIAL",
+  "WORKSHOP"
+];
+const EVENT_TYPE_ALIASES: Record<string, string> = {
+  ACTIVITY: "ACTIVITY",
+  ANCILLARYEVENT: "ACTIVITY",
+  BUSINESSMEETING: "BUSINESSMEETING",
+  CONTRIBUTEDSESSION: "ORAL",
+  ORAL: "ORAL",
+  FOCUSSESSION: "FOCUS",
+  FOCUS: "FOCUS",
+  INTERACTSESSION: "INTERACT",
+  INTERACT: "INTERACT",
+  INVITEDSESSION: "INVITED",
+  INVITED: "INVITED",
+  MINISYMPOSIUM: "MINISYMPOSIUM",
+  OPENROUNDTABLE: "OPENROUNDTABLE",
+  PANEL: "PANEL",
+  POSTERSESSION: "POSTER",
+  POSTER: "POSTER",
+  RECEPTION: "RECEPTION",
+  TOWNHALL: "TOWNHALL",
+  TUTORIAL: "TUTORIAL",
+  WORKSHOP: "WORKSHOP"
+};
+const MEETING_TIME_ZONE = process.env.SCHEDULE_TIME_ZONE ?? "America/Denver";
 
 const KEYWORDS = [
   "quantum",
@@ -85,9 +127,82 @@ function normalize(value: string): string {
   return value.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function getOutputPath(): string {
+  const configured = process.env.SCRAPER_OUTPUT_FILE?.trim();
+  const target = configured && configured.length > 0 ? configured : DEFAULT_OUTPUT_RELATIVE;
+  return resolve(WORKSPACE_ROOT, target);
+}
+
 function includesKeyword(text: string): boolean {
   const lower = text.toLowerCase();
   return KEYWORDS.some((keyword) => lower.includes(keyword));
+}
+
+function normalizeEventTypeToken(value: string): string {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function canonicalizeEventType(value: string | undefined): string {
+  const normalized = normalizeEventTypeToken(value ?? "");
+  return EVENT_TYPE_ALIASES[normalized] ?? normalized;
+}
+
+function parseEventTypeFilter(): Set<string> {
+  const raw = process.env.SCRAPER_EVENT_TYPES?.trim();
+  const source = raw ? raw.split(",") : DEFAULT_EVENT_TYPES;
+  const normalized = source
+    .map((value) => canonicalizeEventType(value.trim()))
+    .filter((value) => value.length > 0);
+
+  if (normalized.includes("ALL")) {
+    return new Set(DEFAULT_EVENT_TYPES);
+  }
+
+  return new Set(normalized);
+}
+
+function eventTypeAllowed(eventType: string | undefined, allowedTypes: Set<string>): boolean {
+  const normalized = canonicalizeEventType(eventType ?? "UNKNOWN");
+  return allowedTypes.has(normalized);
+}
+
+function toMeetingTimeIso(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: MEETING_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+    timeZoneName: "shortOffset"
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "1970";
+  const month = parts.find((part) => part.type === "month")?.value ?? "01";
+  const day = parts.find((part) => part.type === "day")?.value ?? "01";
+  const hour = parts.find((part) => part.type === "hour")?.value ?? "00";
+  const minute = parts.find((part) => part.type === "minute")?.value ?? "00";
+  const second = parts.find((part) => part.type === "second")?.value ?? "00";
+  const offsetRaw = parts.find((part) => part.type === "timeZoneName")?.value ?? "GMT+0";
+  const offsetMatch = offsetRaw.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/);
+  const offset = offsetMatch
+    ? `${offsetMatch[1]}${offsetMatch[2].padStart(2, "0")}:${(offsetMatch[3] ?? "00").padStart(2, "0")}`
+    : "+00:00";
+
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}${offset}`;
+}
+
+function parseDateOrUndefined(raw: string | undefined): Date | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+  return parsed;
 }
 
 function extractEventIds(indexPayload: Record<string, number>): number[] {
@@ -124,7 +239,7 @@ function eventLooksRelevant(event: EventRecord): boolean {
     return false;
   }
 
-  const meetingPrefix = (process.env.SCRAPER_MEETING_PREFIX ?? DEFAULT_MEETING_PREFIX).toUpperCase();
+  const meetingPrefix = (process.env.SCRAPER_MEETING_PREFIX ?? DEFAULT_MEETING_PREFIX).trim().toUpperCase();
   if (meetingPrefix && !event.code?.toUpperCase().startsWith(meetingPrefix)) {
     return false;
   }
@@ -175,20 +290,22 @@ async function getLocationLabel(locationIds: number[] | undefined): Promise<stri
 
 function toTalk(record: PresentationRecord, event: EventRecord, room: string): Talk {
   const eventPeriod = event.periods?.[0];
-  const startTime = record.start ?? eventPeriod?.start ?? new Date().toISOString();
-  const endTime =
-    record.end ?? eventPeriod?.end ?? new Date(new Date(startTime).getTime() + 12 * 60 * 1000).toISOString();
+  const startDate = parseDateOrUndefined(record.start) ?? parseDateOrUndefined(eventPeriod?.start) ?? new Date();
+  const endDate =
+    parseDateOrUndefined(record.end) ??
+    parseDateOrUndefined(eventPeriod?.end) ??
+    new Date(startDate.getTime() + 12 * 60 * 1000);
 
   return {
     id: `APS-${record.id}`,
     title: normalize(record.title),
     abstract: normalize(record.abstract ?? ""),
     speakers: [],
-    track: event.type || "Unknown",
+    track: canonicalizeEventType(event.type) || "UNKNOWN",
     topics: [...new Set([...(record.topics ?? []), ...(event.topics ?? [])].map((t) => normalize(t).toLowerCase()))],
     room,
-    startTime,
-    endTime,
+    startTime: toMeetingTimeIso(startDate),
+    endTime: toMeetingTimeIso(endDate),
     sourceUrl: buildEventUrl(event.code, event.id)
   };
 }
@@ -197,6 +314,10 @@ async function runScrape(): Promise<ScrapeResult> {
   const indexPayload = await fetchJson<Record<string, number>>(EVENT_INDEX_URL);
   const eventIds = extractEventIds(indexPayload);
   const maxEvents = Number(process.env.SCRAPER_MAX_EVENTS ?? eventIds.length);
+  const allowedTypes = parseEventTypeFilter();
+
+  // Talks scraping is discovery-only: do not apply per-day/time-window planning constraints.
+  // Those constraints are only for schedule planning, not data collection.
 
   const talks: Talk[] = [];
   let relevantEventCount = 0;
@@ -211,6 +332,11 @@ async function runScrape(): Promise<ScrapeResult> {
     }
 
     if (!event.presentation_ids?.length) {
+      continue;
+    }
+
+    // Filter by session type before any presentation-level scraping.
+    if (!eventTypeAllowed(event.type, allowedTypes)) {
       continue;
     }
 
@@ -249,19 +375,20 @@ async function runScrape(): Promise<ScrapeResult> {
   };
 }
 
-async function persistResult(result: ScrapeResult): Promise<void> {
-  await mkdir(new URL("../../../data/", import.meta.url), { recursive: true });
-  await writeFile(OUTPUT_PATH, JSON.stringify(result, null, 2), "utf-8");
+async function persistResult(result: ScrapeResult, outputPath: string): Promise<void> {
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, JSON.stringify(result, null, 2), "utf-8");
 }
 
 runScrape()
   .then(async (result) => {
-    await persistResult(result);
+    const outputPath = getOutputPath();
+    await persistResult(result, outputPath);
     console.log("scrape finished", {
       scannedEventCount: result.scannedEventCount,
       relevantEventCount: result.relevantEventCount,
       talkCount: result.talkCount,
-      outputPath: OUTPUT_PATH.pathname
+      outputPath
     });
   })
   .catch((error) => {

@@ -20,6 +20,8 @@ export type TalksPayload = {
 
 export type ParsedPreferences = {
   preferredPhrases: string[];
+  preferredTags: string[];
+  hardwareArchitectures: string[];
   avoidPhrases: string[];
   maxTalksPerDay: number;
   dayStartMinutes?: number;
@@ -75,7 +77,7 @@ function toMinutes(timeValue: string): number | undefined {
 
 function splitPhrases(raw: string): string[] {
   return raw
-    .split(/,|;|\band\b|\bor\b/i)
+    .split(/,|;|\||\band\b|\bor\b/i)
     .map((part) => normalize(part))
     .filter((part) => part.length >= 3)
     .filter((part) => !/\d/.test(part))
@@ -83,8 +85,102 @@ function splitPhrases(raw: string): string[] {
     .filter((part) => !["talks", "sessions", "physics", "user"].includes(part));
 }
 
+function singularizePhrase(phrase: string): string | undefined {
+  if (!phrase.endsWith("s")) {
+    return undefined;
+  }
+
+  const words = phrase.split(" ");
+  const last = words[words.length - 1] ?? "";
+  if (last.length <= 3 || !last.endsWith("s") || last.endsWith("ss")) {
+    return undefined;
+  }
+
+  words[words.length - 1] = last.slice(0, -1);
+  const singular = normalize(words.join(" "));
+  return singular && singular !== phrase ? singular : undefined;
+}
+
+function augmentPreferredPhrases(rawPhrases: Iterable<string>): string[] {
+  const augmented = new Set<string>();
+  const aliasMap: Record<string, string[]> = {
+    qec: ["error correction", "fault tolerance", "logical qubit"],
+    "error correction": ["qec", "fault tolerance", "logical qubit"],
+    "fault tolerance": ["error correction", "qec", "logical qubit"],
+    "superconducting qubit": ["transmon", "superconducting qubits"],
+    "superconducting qubits": ["transmon", "superconducting qubit"],
+    transmon: ["superconducting qubit", "superconducting qubits", "circuit qed"],
+    "circuit qed": ["superconducting qubit", "transmon"],
+    "trapped ion": ["trapped ions"],
+    "trapped ions": ["trapped ion"],
+    "ion trap": ["trapped ion", "trapped ions"],
+    "neutral atom": ["neutral atoms"],
+    "neutral atoms": ["neutral atom"],
+    rydberg: ["neutral atom", "neutral atoms"],
+    photonic: ["photonic quantum computing", "linear optics"],
+    "photonic quantum computing": ["photonic", "linear optics"],
+    "linear optics": ["photonic", "photonic quantum computing"],
+    "spin qubit": ["spin qubits"],
+    "spin qubits": ["spin qubit"],
+    "quantum error correction": ["error correction", "qec"],
+    "quantum computing": ["quantum information", "quantum hardware"]
+  };
+
+  for (const phrase of rawPhrases) {
+    const normalized = normalize(phrase);
+    if (!normalized) {
+      continue;
+    }
+
+    augmented.add(normalized);
+
+    const singular = singularizePhrase(normalized);
+    if (singular) {
+      augmented.add(singular);
+    }
+
+    for (const alias of aliasMap[normalized] ?? []) {
+      const normalizedAlias = normalize(alias);
+      if (normalizedAlias) {
+        augmented.add(normalizedAlias);
+      }
+    }
+  }
+
+  return [...augmented];
+}
+
+function parsePreferredTagLine(line: string): string[] {
+  const cleaned = line.replace(/^[-*]\s*/, "").trim();
+  const match = cleaned.match(/^(?:tags?|preferred[\s_-]*tags?|preferred[\s_-]*phrases?|preffered[\s_-]*phrases?)\s*[:=]\s*(.+)$/i);
+  if (!match?.[1]) {
+    return [];
+  }
+  return splitPhrases(match[1]);
+}
+
+function parseHashtagPhrases(line: string): string[] {
+  const hashtags = line.match(/#[a-z0-9][a-z0-9+\-/]*/gi) ?? [];
+  return hashtags
+    .map((tag) => normalize(tag.slice(1).replace(/[-_]/g, " ")))
+    .filter((phrase) => phrase.length >= 3);
+}
+
+function parseHardwareArchitectureLine(line: string): string[] {
+  const cleaned = line.replace(/^[-*]\s*/, "").trim();
+  const match = cleaned.match(
+    /^(?:architectures?|hardware(?:[\s_-]*architectures?)?|quantum(?:[\s_-]*hardware)?(?:[\s_-]*architectures?)?)\s*[:=]\s*(.+)$/i
+  );
+  if (!match?.[1]) {
+    return [];
+  }
+  return splitPhrases(match[1]);
+}
+
 export function parsePreferences(input: string): ParsedPreferences {
   const preferred = new Set<string>();
+  const preferredTags = new Set<string>();
+  const hardwareArchitectures = new Set<string>();
   const avoid = new Set<string>();
   const lower = input.toLowerCase();
 
@@ -105,6 +201,16 @@ export function parsePreferences(input: string): ParsedPreferences {
     const line = lineRaw.trim();
     if (!line) {
       continue;
+    }
+
+    for (const phrase of parsePreferredTagLine(line)) {
+      preferredTags.add(phrase);
+    }
+    for (const phrase of parseHashtagPhrases(line)) {
+      preferredTags.add(phrase);
+    }
+    for (const architecture of parseHardwareArchitectureLine(line)) {
+      hardwareArchitectures.add(architecture);
     }
 
     for (const pattern of preferencePatterns) {
@@ -146,8 +252,12 @@ export function parsePreferences(input: string): ParsedPreferences {
     }
   }
 
+  const preferredPhrases = augmentPreferredPhrases([...preferred, ...preferredTags, ...hardwareArchitectures]);
+
   return {
-    preferredPhrases: [...preferred],
+    preferredPhrases,
+    preferredTags: [...preferredTags],
+    hardwareArchitectures: [...hardwareArchitectures],
     avoidPhrases: [...avoid],
     maxTalksPerDay: Number(maxTalksMatch?.[1] ?? DEFAULT_MAX_TALKS_PER_DAY),
     dayStartMinutes,
