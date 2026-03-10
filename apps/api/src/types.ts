@@ -8,6 +8,7 @@ export type Talk = {
   room: string;
   startTime: string;
   endTime: string;
+  sourceUrl?: string;
 };
 
 export type ScheduleEntry = {

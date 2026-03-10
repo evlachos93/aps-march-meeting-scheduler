@@ -10,6 +10,7 @@ type Talk = {
   room: string;
   startTime: string;
   endTime: string;
+  sourceUrl?: string;
 };
 
 type Session = {
@@ -144,7 +145,7 @@ async function loadTalks(): Promise<void> {
     .map(
       (talk) => `
       <div class="panel">
-        <div class="talk-title">${talk.title}</div>
+        <div class="talk-title">${talk.sourceUrl ? `<a href="${talk.sourceUrl}" target="_blank" rel="noopener noreferrer">${talk.title}</a>` : talk.title}</div>
         <div>${talk.track} | ${formatDateTime(talk.startTime)}</div>
         <div>${talk.room}</div>
         <p>${talk.abstract}</p>
@@ -183,7 +184,7 @@ async function loadSessions(): Promise<void> {
         <div class="talk-title">${session.title}</div>
         <div>${session.sessionType} | ${session.weekday ?? ""} ${session.timeRange}</div>
         <div>${session.room ?? "Room TBD"}</div>
-        <div><a href="${session.url}" target="_blank" rel="noopener noreferrer">${session.sessionCode}</a></div>
+        <div><a href="${session.url}" target="_blank" rel="noopener noreferrer">${session.sessionCode} ↗</a></div>
         <p>${session.talkTitles.length} talks in session</p>
         <button
           class="session-talks-toggle"
