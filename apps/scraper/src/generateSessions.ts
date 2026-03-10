@@ -116,23 +116,6 @@ const EVENT_TYPE_ALIASES: Record<string, string> = {
   TUTORIAL: "TUTORIAL",
   WORKSHOP: "WORKSHOP"
 };
-const SCHEDULE_EVENT_TYPE_LABELS: Record<string, string> = {
-  INVITED: "Invited Session",
-  FOCUS: "Focus Session",
-  ORAL: "Contributed Session",
-  POSTER: "Poster Session",
-  WORKSHOP: "Workshop",
-  TUTORIAL: "Tutorial",
-  PANEL: "Panel",
-  BUSINESSMEETING: "Business Meeting",
-  INTERACT: "Interact Session",
-  MINISYMPOSIUM: "Mini-Symposium",
-  OPENROUNDTABLE: "Open Roundtable",
-  RECEPTION: "Reception",
-  TOWNHALL: "Town Hall",
-  ANCILLARYEVENT: "Activity",
-  ACTIVITY: "Activity"
-};
 
 function toDiscoveryPreferences(preferences: ParsedPreferences): ParsedPreferences {
   return {
@@ -182,17 +165,6 @@ function parseSessionTypeFilter(): Set<string> {
 function sessionTypeAllowed(sessionType: string | undefined, allowedTypes: Set<string>): boolean {
   const normalized = canonicalizeEventType(sessionType ?? "UNKNOWN");
   return allowedTypes.has(normalized);
-}
-
-function getScheduleEventTypeParams(allowedTypes: Set<string>): string[] {
-  const labels: string[] = [];
-  for (const type of allowedTypes) {
-    const label = SCHEDULE_EVENT_TYPE_LABELS[type];
-    if (label) {
-      labels.push(label);
-    }
-  }
-  return [...new Set(labels)];
 }
 
 function normalizeSessionCode(url: string): string | undefined {
@@ -452,60 +424,6 @@ async function enrichSessionsWithTalkTitles(sessions: SessionItem[], preferences
   return enriched;
 }
 
-function extractSessionsFromHtml(html: string, query: string, sessions: Map<string, SessionItem>): void {
-  const linkRegex = /<a[^>]*href="([^"]*\/smt\/2026\/events\/[^"#?]+(?:\/[0-9]+)?)"[^>]*>([^<]+)<\/a>/gi;
-
-  for (const match of html.matchAll(linkRegex)) {
-    const href = match[1];
-    const rawTitle = match[2];
-    const sessionCode = normalizeSessionCode(href);
-    if (!sessionCode) {
-      continue;
-    }
-
-    const url = `https://summit.aps.org/smt/2026/events/${sessionCode}`;
-    const title = decodeHtml(rawTitle);
-    const existing = sessions.get(sessionCode);
-    if (existing) {
-      existing.matchedQueries = [...new Set([...existing.matchedQueries, query])];
-      continue;
-    }
-
-    sessions.set(sessionCode, {
-      sessionCode,
-      title,
-      url,
-      sessionType: "UNKNOWN",
-      matchedQueries: [query],
-      score: 0,
-      reasons: []
-    });
-  }
-}
-
-async function fetchScheduleSearchHtml(query: string, scheduleEventTypeParams: string[]): Promise<string> {
-  const params = new URLSearchParams({
-    _sortby: "relevance",
-    q: query
-  });
-  for (const eventType of scheduleEventTypeParams) {
-    params.append("event-type", eventType);
-  }
-
-  const url = `${SCHEDULE_BASE_URL}?${params.toString()}`;
-  const response = await fetch(url, {
-    headers: {
-      Accept: "text/html,application/xhtml+xml",
-      "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36"
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} for ${url}`);
-  }
-
-  return await response.text();
-}
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, {
