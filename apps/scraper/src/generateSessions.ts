@@ -251,7 +251,16 @@ function normalizePhraseForTalkFilter(phrase: string): string | undefined {
 function talkLooksRelevantToQc(title: string, preferences: ParsedPreferences): boolean {
   const lower = title.toLowerCase();
 
-  // A session is interesting when any talk title matches preferred phrases.
+  // Avoid phrases take precedence: a talk matching an avoid phrase is not relevant
+  // even if it also matches a preferred phrase.
+  for (const phrase of preferences.avoidPhrases) {
+    const normalized = normalizePhraseForTalkFilter(phrase);
+    if (normalized && lower.includes(normalized)) {
+      return false;
+    }
+  }
+
+  // A talk is interesting when its title matches at least one preferred phrase.
   for (const phrase of preferences.preferredPhrases) {
     const normalized = normalizePhraseForTalkFilter(phrase);
     if (normalized && lower.includes(normalized)) {
@@ -368,6 +377,7 @@ function buildSessionTimingIndex(talks: Talk[]): Map<string, SessionTiming> {
 async function enrichSessionsWithTalkTitles(sessions: SessionItem[], preferences: ParsedPreferences): Promise<SessionItem[]> {
   const diagnostics = {
     inputSessions: sessions.length,
+    droppedByAvoidSessionTitle: 0,
     droppedNoTalkTitles: 0,
     droppedNoPreferredPhraseMatch: 0,
     eventLookupsAttempted: 0,
@@ -382,6 +392,16 @@ async function enrichSessionsWithTalkTitles(sessions: SessionItem[], preferences
     sessions,
     CONCURRENCY,
     async (session) => {
+      // Hard-block sessions whose title matches an avoid phrase.
+      const sessionTitleLower = session.title.toLowerCase();
+      for (const phrase of preferences.avoidPhrases) {
+        const normalized = normalizePhraseForTalkFilter(phrase);
+        if (normalized && sessionTitleLower.includes(normalized)) {
+          diagnostics.droppedByAvoidSessionTitle += 1;
+          return null;
+        }
+      }
+
       let talkTitles = session.talkTitles ?? [];
       let presentationIds = session.presentationIds;
 

@@ -5,4 +5,5 @@ I want to focus on quantum computing, quantum information, qubits, superconducti
 I am also interested in error correction, fault tolerance, quantum control, calibration, readout, coherence, noise, cryogenics, fabrication.
 I am also interested in quantum algorithms, quantum simulation, benchmarking, verification, compiler, software.
 I am interested in all relevant sessions for now.
+avoid high energy physics, particle physics, nuclear physics, astrophysics, heavy ion collisions, particle detector
 I prefer talks between 8:00 AM and 8:00 PM.
