@@ -18,6 +18,23 @@
 - `talkId`: string
 - `addedAt`: ISO timestamp
 
+## UI topics config (`data/ui-topics.json`)
+
+Array of objects that controls which topics appear in the web app's **Filter by topic** dropdown.
+Edit this file to add, remove, or rename entries — no code change required.
+
+Each entry:
+- `label`: string — display name shown in the dropdown
+- `value`: string — must exactly match a topic string from `Talk.topics` (lowercase, as it appears in `data/talks.json`)
+
+Example:
+```json
+[
+  { "label": "Error correction", "value": "error correction" },
+  { "label": "Quantum computing", "value": "quantum computing" }
+]
+```
+
 ## Calendar integration
 
 - Baseline: export per-user schedule as `.ics`.

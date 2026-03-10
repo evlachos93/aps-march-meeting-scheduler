@@ -1,5 +1,6 @@
 import talksJson from "../../../data/talks.json" with { type: "json" };
 import sessionsJson from "../../../data/sessions.json" with { type: "json" };
+import uiTopicsJson from "../../../data/ui-topics.json" with { type: "json" };
 import type { ScheduleEntry, Session, SessionsPayload, Talk } from "./types.js";
 
 type TalksPayload = {
@@ -8,6 +9,9 @@ type TalksPayload = {
 
 const talks = Array.isArray(talksJson) ? (talksJson as Talk[]) : ((talksJson as TalksPayload).talks ?? []);
 const sessions = (sessionsJson as SessionsPayload).sessions ?? [];
+
+type UiTopic = { label: string; value: string };
+const uiTopics: UiTopic[] = Array.isArray(uiTopicsJson) ? (uiTopicsJson as UiTopic[]) : [];
 const scheduleByUser = new Map<string, Map<string, ScheduleEntry>>();
 
 export function getTalks(): Talk[] {
@@ -16,6 +20,10 @@ export function getTalks(): Talk[] {
 
 export function getSessions(): Session[] {
   return sessions;
+}
+
+export function getUiTopics(): UiTopic[] {
+  return uiTopics;
 }
 
 export function getUserSchedule(userId: string): ScheduleEntry[] {

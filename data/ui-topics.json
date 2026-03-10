@@ -1,0 +1,11 @@
+[
+  { "label": "Algorithms", "value": "algorithms" },
+  { "label": "Error correction", "value": "error correction" },
+  { "label": "Quantum computing", "value": "quantum computing" },
+  { "label": "Control", "value": "quantum control" },
+  { "label": "Devices", "value": "quantum devices" },
+  { "label": "Information", "value": "quantum information" },
+  { "label": "Sensing", "value": "quantum sensing" },
+  { "label": "Simulations", "value": "quantum simulations" },
+  { "label": "Calibration", "value": "calibration" }
+]

@@ -43,11 +43,6 @@ app.innerHTML = `
     <select id="sort"></select>
     <select id="topic">
       <option value="">All topics</option>
-      <option value="hardware">Hardware</option>
-      <option value="fabrication">Fabrication</option>
-      <option value="simulation">Simulation</option>
-      <option value="algorithms">Algorithms</option>
-      <option value="error-correction">Error correction</option>
     </select>
     <select id="track">
       <option value="">All tracks</option>
@@ -69,15 +64,15 @@ app.innerHTML = `
   <div id="talks"></div>
 `;
 
-const talksContainer = document.querySelector<HTMLDivElement>("#talks");
+const talksContainer = document.querySelector<HTMLDivElement>("#talks")!;
 if (!talksContainer) throw new Error("Talk list root missing");
 
-const viewSelect = document.querySelector<HTMLSelectElement>("#view");
-const queryInput = document.querySelector<HTMLInputElement>("#query");
-const sortSelect = document.querySelector<HTMLSelectElement>("#sort");
-const topicSelect = document.querySelector<HTMLSelectElement>("#topic");
-const trackSelect = document.querySelector<HTMLSelectElement>("#track");
-const sessionTypeSelect = document.querySelector<HTMLSelectElement>("#sessionType");
+const viewSelect = document.querySelector<HTMLSelectElement>("#view")!;
+const queryInput = document.querySelector<HTMLInputElement>("#query")!;
+const sortSelect = document.querySelector<HTMLSelectElement>("#sort")!;
+const topicSelect = document.querySelector<HTMLSelectElement>("#topic")!;
+const trackSelect = document.querySelector<HTMLSelectElement>("#track")!;
+const sessionTypeSelect = document.querySelector<HTMLSelectElement>("#sessionType")!;
 
 if (!viewSelect || !queryInput || !sortSelect || !topicSelect || !trackSelect || !sessionTypeSelect) {
   throw new Error("Missing UI controls");
@@ -254,5 +249,23 @@ viewSelect.addEventListener("change", async () => {
   await loadCurrentView();
 });
 
+async function initTopics(): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/topics`);
+    const payload = (await response.json()) as { topics: { label: string; value: string }[] };
+    const fragment = document.createDocumentFragment();
+    for (const t of payload.topics) {
+      const opt = document.createElement("option");
+      opt.value = t.value;
+      opt.textContent = t.label;
+      fragment.appendChild(opt);
+    }
+    topicSelect.appendChild(fragment);
+    console.log(`[initTopics] Loaded ${payload.topics.length} topics from API`);
+  } catch (err) {
+    console.warn("[initTopics] Failed to load topics from API, dropdown will be empty", err);
+  }
+}
+
 setSortOptions("talks");
-loadCurrentView();
+initTopics().then(() => loadCurrentView());

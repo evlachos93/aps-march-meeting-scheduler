@@ -1,7 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { buildIcs } from "./ics.js";
-import { addToSchedule, getSessions, getTalks, getUserSchedule, removeFromSchedule } from "./store.js";
+import { addToSchedule, getSessions, getTalks, getUiTopics, getUserSchedule, removeFromSchedule } from "./store.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 8787);
@@ -11,6 +11,10 @@ app.use(express.json());
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "aps-api" });
+});
+
+app.get("/topics", (_req, res) => {
+  res.json({ topics: getUiTopics() });
 });
 
 app.get("/talks", (req, res) => {
