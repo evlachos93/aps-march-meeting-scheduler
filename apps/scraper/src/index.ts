@@ -1,11 +1,13 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parsePreferences } from "./planner.js";
 import { CONCURRENCY, mapConcurrent } from "./utils.js";
 
 const DATA_ROOT = "https://makoshark-data.aps.org/441";
 const EVENT_INDEX_URL = `${DATA_ROOT}/_ndx/meeting/sort-event-by-time.json`;
 const DEFAULT_OUTPUT_RELATIVE = "data/talks.generated.json";
+const PREFERENCES_PATH = new URL("../../../data/session-preferences.txt", import.meta.url);
 const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const DEFAULT_MEETING_PREFIX = "";
 const DEFAULT_EVENT_TYPES = [
@@ -117,9 +119,17 @@ type ScrapeResult = {
   source: string;
   fetchedAt: string;
   scannedEventCount: number;
+  candidateEventCount: number;
   relevantEventCount: number;
   talkCount: number;
   talks: Talk[];
+};
+
+type EventCandidate = {
+  event: EventRecord;
+  room: string;
+  score: number;
+  matchedKeywords: string[];
 };
 
 const locationCache = new Map<number, LocationRecord | null>();
@@ -137,6 +147,11 @@ function getOutputPath(): string {
 function includesKeyword(text: string): boolean {
   const lower = text.toLowerCase();
   return KEYWORDS.some((keyword) => lower.includes(keyword));
+}
+
+function collectMatchedKeywords(text: string): string[] {
+  const lower = text.toLowerCase();
+  return KEYWORDS.filter((keyword) => lower.includes(keyword));
 }
 
 function normalizeEventTypeToken(value: string): string {
@@ -235,7 +250,7 @@ function buildEventUrl(code: string, id: number): string {
   return `https://summit.aps.org/events/${code}/${id}`;
 }
 
-function eventLooksRelevant(event: EventRecord): boolean {
+function eventPassesStructuralFilters(event: EventRecord, allowedTypes: Set<string>): boolean {
   if (event.type?.toUpperCase() === "ONDEMAND") {
     return false;
   }
@@ -245,6 +260,18 @@ function eventLooksRelevant(event: EventRecord): boolean {
     return false;
   }
 
+  if (!eventTypeAllowed(event.type, allowedTypes)) {
+    return false;
+  }
+
+  if (!event.presentation_ids?.length) {
+    return false;
+  }
+
+  return true;
+}
+
+function scoreEventKeywordRelevance(event: EventRecord): { score: number; matchedKeywords: string[] } {
   const haystack = normalize(
     [
       event.title,
@@ -255,13 +282,45 @@ function eventLooksRelevant(event: EventRecord): boolean {
     ].join(" ")
   );
 
-  return includesKeyword(haystack);
+  const matchedKeywords = collectMatchedKeywords(haystack);
+
+  return {
+    score: matchedKeywords.length,
+    matchedKeywords: [...new Set(matchedKeywords)]
+  };
 }
 
-function talkLooksInteresting(talk: PresentationRecord, event: EventRecord): boolean {
-  const haystack = normalize(
-    [talk.title, talk.abstract ?? "", ...(talk.topics ?? []), ...(event.topics ?? []), event.title].join(" ")
-  );
+function normalizePhraseForTalkFilter(phrase: string): string | undefined {
+  const normalized = phrase.trim().toLowerCase();
+  if (!normalized) {
+    return undefined;
+  }
+  if (normalized.includes("all relevant sessions for now")) {
+    return undefined;
+  }
+  return normalized;
+}
+
+function talkLooksInteresting(talk: PresentationRecord, preferences: ReturnType<typeof parsePreferences>): boolean {
+  const haystack = normalize([talk.title, talk.abstract ?? "", ...(talk.topics ?? [])].join(" "));
+
+  // Avoid phrases take precedence, matching session enrichment behavior.
+  for (const phrase of preferences.avoidPhrases) {
+    const normalized = normalizePhraseForTalkFilter(phrase);
+    if (normalized && haystack.includes(normalized)) {
+      return false;
+    }
+  }
+
+  const preferredPhrases = preferences.preferredPhrases
+    .map((phrase) => normalizePhraseForTalkFilter(phrase))
+    .filter((phrase): phrase is string => Boolean(phrase));
+
+  if (preferredPhrases.length > 0) {
+    return preferredPhrases.some((phrase) => haystack.includes(phrase));
+  }
+
+  // If preferences are empty/unusable, keep keyword fallback behavior.
   return includesKeyword(haystack);
 }
 
@@ -311,10 +370,7 @@ function toTalk(record: PresentationRecord, event: EventRecord, room: string): T
   };
 }
 
-async function processEvent(
-  eventId: number,
-  allowedTypes: Set<string>
-): Promise<{ relevant: boolean; talks: Talk[] } | null> {
+async function fetchEventCandidate(eventId: number, allowedTypes: Set<string>): Promise<EventCandidate | null> {
   let event: EventRecord;
   try {
     event = await fetchJson<EventRecord>(`${DATA_ROOT}/event/${eventId}.json`);
@@ -323,63 +379,105 @@ async function processEvent(
     return null;
   }
 
-  if (!event.presentation_ids?.length) {
-    return { relevant: false, talks: [] };
-  }
-
-  // Filter by session type before any presentation-level scraping.
-  if (!eventTypeAllowed(event.type, allowedTypes)) {
-    return { relevant: false, talks: [] };
-  }
-
-  if (!eventLooksRelevant(event)) {
-    return { relevant: false, talks: [] };
+  if (!eventPassesStructuralFilters(event, allowedTypes)) {
+    return null;
   }
 
   const room = await getLocationLabel(event.location_ids);
 
+  const { score, matchedKeywords } = scoreEventKeywordRelevance(event);
+
+  return {
+    event,
+    room,
+    score,
+    matchedKeywords
+  };
+}
+
+async function enrichCandidateWithTalks(
+  candidate: EventCandidate,
+  preferences: ReturnType<typeof parsePreferences>
+): Promise<{ talks: Talk[] }> {
+  const { event, room } = candidate;
+  const presentationIds = event.presentation_ids ?? [];
+
   const presentationResults = await Promise.allSettled(
-    event.presentation_ids.map((presentationId) =>
-      fetchJson<PresentationRecord>(`${DATA_ROOT}/presentation/${presentationId}.json`)
-    )
+    presentationIds.map((presentationId) => fetchJson<PresentationRecord>(`${DATA_ROOT}/presentation/${presentationId}.json`))
   );
 
   const talks: Talk[] = [];
   for (let i = 0; i < presentationResults.length; i++) {
     const result = presentationResults[i]!;
     if (result.status === "rejected") {
-      console.warn(`presentation failed: ${event.presentation_ids[i]}`, result.reason);
+      console.warn(`presentation failed: ${presentationIds[i]}`, result.reason);
       continue;
     }
-    if (talkLooksInteresting(result.value, event)) {
+    if (talkLooksInteresting(result.value, preferences)) {
       talks.push(toTalk(result.value, event, room));
     }
   }
 
-  return { relevant: true, talks };
+  return { talks };
 }
 
 async function runScrape(): Promise<ScrapeResult> {
+  const preferencesRaw = await readFile(PREFERENCES_PATH, "utf-8");
+  const preferences = parsePreferences(preferencesRaw);
+
   const indexPayload = await fetchJson<Record<string, number>>(EVENT_INDEX_URL);
   const eventIds = extractEventIds(indexPayload);
   const maxEvents = Number(process.env.SCRAPER_MAX_EVENTS ?? eventIds.length);
   const allowedTypes = parseEventTypeFilter();
 
-  const results = await mapConcurrent(
-    eventIds.slice(0, maxEvents),
+  const eventsToScan = eventIds.slice(0, maxEvents);
+
+  const candidateResults = await mapConcurrent(
+    eventsToScan,
     CONCURRENCY,
-    (eventId) => processEvent(eventId, allowedTypes)
+    (eventId) => fetchEventCandidate(eventId, allowedTypes)
+  );
+
+  const candidates = candidateResults.filter((candidate): candidate is EventCandidate => candidate !== null);
+
+  // Keep a broad candidate set and apply hard filtering after presentation enrichment.
+  // This mirrors the session scraper's staged flow.
+  const rankedCandidates = [...candidates].sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return a.event.code.localeCompare(b.event.code);
+  });
+
+  console.log("talk scraper candidate diagnostics", {
+    scannedEventCount: eventsToScan.length,
+    candidateEventCount: rankedCandidates.length,
+    keywordScoredCandidateCount: rankedCandidates.filter((candidate) => candidate.matchedKeywords.length > 0).length,
+    allowedEventTypes: [...allowedTypes]
+  });
+
+  const enrichResults = await mapConcurrent(rankedCandidates, CONCURRENCY, (candidate) =>
+    enrichCandidateWithTalks(candidate, preferences)
   );
 
   const talks: Talk[] = [];
   let relevantEventCount = 0;
-  for (const result of results) {
-    if (!result) continue;
-    if (result.relevant) {
+  let droppedNoInterestingTalks = 0;
+  for (const result of enrichResults) {
+    if (result.talks.length > 0) {
       relevantEventCount += 1;
       talks.push(...result.talks);
+    } else {
+      droppedNoInterestingTalks += 1;
     }
   }
+
+  console.log("talk scraper enrichment diagnostics", {
+    candidateEventCount: rankedCandidates.length,
+    relevantEventCount,
+    droppedNoInterestingTalks,
+    talkCountBeforeDedup: talks.length
+  });
 
   const deduped = new Map<string, Talk>();
   for (const talk of talks) {
@@ -389,7 +487,8 @@ async function runScrape(): Promise<ScrapeResult> {
   return {
     source: "APS Global Physics Summit 2026",
     fetchedAt: new Date().toISOString(),
-    scannedEventCount: Math.min(maxEvents, eventIds.length),
+    scannedEventCount: eventsToScan.length,
+    candidateEventCount: rankedCandidates.length,
     relevantEventCount,
     talkCount: deduped.size,
     talks: [...deduped.values()].sort((a, b) => a.startTime.localeCompare(b.startTime))
@@ -407,6 +506,7 @@ runScrape()
     await persistResult(result, outputPath);
     console.log("scrape finished", {
       scannedEventCount: result.scannedEventCount,
+      candidateEventCount: result.candidateEventCount,
       relevantEventCount: result.relevantEventCount,
       talkCount: result.talkCount,
       outputPath
