@@ -836,6 +836,9 @@ async function filterSessionsWithLLM(
 }
 
 async function run(): Promise<void> {
+  const runStart = performance.now();
+  const elapsed = (since: number) => `${((performance.now() - since) / 1000).toFixed(1)}s`;
+
   const talksPayloadRaw = await readFile(TALKS_PATH, "utf-8");
   const preferencesRaw = await readFile(PREFERENCES_PATH, "utf-8");
   const talksPayload = JSON.parse(talksPayloadRaw) as TalksPayload;
@@ -863,6 +866,7 @@ async function run(): Promise<void> {
   });
 
   // JSON-first pipeline: build sessions directly from APS event index/event/presentation data.
+  let stageStart = performance.now();
   try {
     for (const session of await buildFallbackSessionsFromEventIndex(preferences, allowedTypes)) {
       sessionsByCode.set(session.sessionCode, session);
@@ -870,14 +874,17 @@ async function run(): Promise<void> {
   } catch (error) {
     console.warn("event-index source failed, using talks fallback", error);
   }
+  console.log(`stage [event-index] done in ${elapsed(stageStart)} — ${sessionsByCode.size} sessions`);
 
   if (sessionsByCode.size === 0) {
     if (skipEventIndexFallback) {
       console.warn("event-index source unavailable and SESSIONS_SKIP_EVENT_INDEX=1 is set");
     }
+    stageStart = performance.now();
     for (const session of await buildFallbackSessionsFromTalks(talksPayload.talks, preferences, allowedTypes)) {
       sessionsByCode.set(session.sessionCode, session);
     }
+    console.log(`stage [talks-fallback] done in ${elapsed(stageStart)} — ${sessionsByCode.size} sessions`);
     usedFallback = true;
     fallbackSource = "talks-generated";
   }
@@ -888,6 +895,7 @@ async function run(): Promise<void> {
     fallbackSource
   });
 
+  stageStart = performance.now();
   const sessions = [...sessionsByCode.values()]
     .map((session) => {
       const { score, reasons } = scoreSession(session.title, session.matchedQueries, preferences);
@@ -903,6 +911,7 @@ async function run(): Promise<void> {
       }
       return a.sessionCode.localeCompare(b.sessionCode);
     });
+  console.log(`stage [scoring] done in ${elapsed(stageStart)} — ${sessions.length} sessions`);
 
   console.log("session scoring diagnostics", {
     candidateSessionsBeforeScoreFilter: sessionsByCode.size,
@@ -910,11 +919,18 @@ async function run(): Promise<void> {
     note: "No score-based filtering applied; talk-title preferred-phrase filtering happens during enrichment"
   });
 
+  stageStart = performance.now();
   const enrichedSessions = await enrichSessionsWithTalkTitles(sessions, preferences);
-  const qcRelevantSessions =
-    process.env.SESSIONS_LLM_FILTER === "1"
-      ? await filterSessionsWithLLM(enrichedSessions, preferences)
-      : enrichedSessions;
+  console.log(`stage [enrichment] done in ${elapsed(stageStart)} — ${enrichedSessions.length} sessions`);
+
+  let qcRelevantSessions: SessionItem[];
+  if (process.env.SESSIONS_LLM_FILTER === "1") {
+    stageStart = performance.now();
+    qcRelevantSessions = await filterSessionsWithLLM(enrichedSessions, preferences);
+    console.log(`stage [llm-filter] done in ${elapsed(stageStart)} — ${qcRelevantSessions.length} sessions`);
+  } else {
+    qcRelevantSessions = enrichedSessions;
+  }
 
   const outputPath = getOutputPath();
   const output: GeneratedSessions = {
@@ -961,7 +977,8 @@ async function run(): Promise<void> {
     usedFallback: output.summary.usedFallback,
     fallbackSource,
     sessionTypes: [...allowedTypes],
-    outputPath
+    outputPath,
+    totalTime: elapsed(runStart)
   });
 }
 
