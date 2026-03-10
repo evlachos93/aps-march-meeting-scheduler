@@ -602,10 +602,6 @@ async function buildFallbackSessionsFromEventIndex(preferences: ParsedPreference
     }
 
     const { score, matchedQueries } = scoreEvent(event, preferences);
-    if (score <= 0) {
-      skippedByScore += 1;
-      continue;
-    }
 
     const existing = sessionsByCode.get(event.code.toUpperCase());
     if (existing) {
@@ -760,7 +756,6 @@ async function run(): Promise<void> {
   const preferences = toDiscoveryPreferences(parsePreferences(preferencesRaw));
   const queries = [...new Set(preferences.preferredPhrases.map((phrase) => phrase.trim()).filter((phrase) => phrase.length >= 3))];
   const allowedTypes = parseSessionTypeFilter();
-  const scheduleEventTypeParams = getScheduleEventTypeParams(allowedTypes);
 
   const sessionsByCode = new Map<string, SessionItem>();
   let usedFallback = false;
@@ -775,58 +770,31 @@ async function run(): Promise<void> {
     skipEventIndexFallback
   });
 
-  let failedQueryCount = 0;
-  let successfulQueryCount = 0;
-  let scheduleSessionsAdded = 0;
-  for (const query of queries) {
-    try {
-      const beforeSize = sessionsByCode.size;
-      const html = await fetchScheduleSearchHtml(query, scheduleEventTypeParams);
-      extractSessionsFromHtml(html, query, sessionsByCode);
-      const added = sessionsByCode.size - beforeSize;
-      scheduleSessionsAdded += Math.max(added, 0);
-      successfulQueryCount += 1;
-    } catch (error) {
-      failedQueryCount += 1;
-      console.warn("schedule query failed; continuing", { query, error });
+  // JSON-first pipeline: build sessions directly from APS event index/event/presentation data.
+  try {
+    for (const session of await buildFallbackSessionsFromEventIndex(preferences, allowedTypes)) {
+      sessionsByCode.set(session.sessionCode, session);
     }
-  }
-
-  console.log("schedule search diagnostics", {
-    totalQueries: queries.length,
-    successfulQueryCount,
-    failedQueryCount,
-    uniqueSessionsFromSchedule: sessionsByCode.size,
-    scheduleSessionsAdded
-  });
-
-  if (failedQueryCount === queries.length && queries.length > 0) {
-    console.warn("all schedule queries failed; using fallback sources");
-    usedFallback = true;
+  } catch (error) {
+    console.warn("event-index source failed, using talks fallback", error);
   }
 
   if (sessionsByCode.size === 0) {
-    if (!skipEventIndexFallback) {
-      try {
-        for (const session of await buildFallbackSessionsFromEventIndex(preferences, allowedTypes)) {
-          sessionsByCode.set(session.sessionCode, session);
-        }
-        fallbackSource = "aps-event-index";
-      } catch (error) {
-        console.warn("event-index fallback failed, using talks fallback", error);
-      }
-    } else {
-      console.warn("event-index fallback skipped via SESSIONS_SKIP_EVENT_INDEX=1");
+    if (skipEventIndexFallback) {
+      console.warn("event-index source unavailable and SESSIONS_SKIP_EVENT_INDEX=1 is set");
     }
-
-    if (sessionsByCode.size === 0) {
-      for (const session of await buildFallbackSessionsFromTalks(talksPayload.talks, preferences, allowedTypes)) {
-        sessionsByCode.set(session.sessionCode, session);
-      }
-      fallbackSource = "talks-generated";
+    for (const session of await buildFallbackSessionsFromTalks(talksPayload.talks, preferences, allowedTypes)) {
+      sessionsByCode.set(session.sessionCode, session);
     }
     usedFallback = true;
+    fallbackSource = "talks-generated";
   }
+
+  console.log("json source diagnostics", {
+    sessionsFromEventIndex: usedFallback ? 0 : sessionsByCode.size,
+    usedFallback,
+    fallbackSource
+  });
 
   const sessions = [...sessionsByCode.values()]
     .map((session) => {
