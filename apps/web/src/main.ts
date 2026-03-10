@@ -49,6 +49,20 @@ app.innerHTML = `
       <option value="algorithms">Algorithms</option>
       <option value="error-correction">Error correction</option>
     </select>
+    <select id="track">
+      <option value="">All tracks</option>
+      <option value="INVITED">Invited</option>
+      <option value="FOCUS">Focus</option>
+      <option value="ORAL">Oral</option>
+      <option value="POSTER">Poster</option>
+    </select>
+    <select id="sessionType">
+      <option value="">All session types</option>
+      <option value="INVITED">Invited</option>
+      <option value="FOCUS">Focus</option>
+      <option value="ORAL">Oral</option>
+      <option value="POSTER">Poster</option>
+    </select>
     <button id="load">Find</button>
     <button id="export">Export .ics</button>
   </div>
@@ -62,8 +76,10 @@ const viewSelect = document.querySelector<HTMLSelectElement>("#view");
 const queryInput = document.querySelector<HTMLInputElement>("#query");
 const sortSelect = document.querySelector<HTMLSelectElement>("#sort");
 const topicSelect = document.querySelector<HTMLSelectElement>("#topic");
+const trackSelect = document.querySelector<HTMLSelectElement>("#track");
+const sessionTypeSelect = document.querySelector<HTMLSelectElement>("#sessionType");
 
-if (!viewSelect || !queryInput || !sortSelect || !topicSelect) {
+if (!viewSelect || !queryInput || !sortSelect || !topicSelect || !trackSelect || !sessionTypeSelect) {
   throw new Error("Missing UI controls");
 }
 
@@ -72,8 +88,11 @@ function setSortOptions(view: "talks" | "sessions"): void {
     sortSelect.innerHTML = `
       <option value="time">Sort: Start time</option>
       <option value="title">Sort: Title</option>
+      <option value="track">Sort: Track</option>
     `;
     topicSelect.style.display = "";
+    trackSelect.style.display = "";
+    sessionTypeSelect.style.display = "none";
     queryInput.placeholder = "Search talks";
     return;
   }
@@ -85,6 +104,8 @@ function setSortOptions(view: "talks" | "sessions"): void {
     <option value="talk-count">Sort: Talk count</option>
   `;
   topicSelect.style.display = "none";
+  trackSelect.style.display = "none";
+  sessionTypeSelect.style.display = "";
   queryInput.placeholder = "Search sessions";
 }
 
@@ -107,22 +128,18 @@ function escapeHtml(value: string): string {
 async function loadTalks(): Promise<void> {
   const query = queryInput.value.trim();
   const topic = topicSelect.value.trim();
+  const track = trackSelect.value.trim();
   const sortBy = sortSelect.value;
   const params = new URLSearchParams();
   if (query) params.set("q", query);
   if (topic) params.set("topic", topic);
+  if (track) params.set("track", track);
   if (sortBy) params.set("sortBy", sortBy);
 
   const response = await fetch(`${API_BASE}/talks?${params.toString()}`);
   const payload = (await response.json()) as { talks: Talk[] };
-  const sortedTalks = [...payload.talks].sort((a, b) => {
-    if (sortBy === "title") {
-      return a.title.localeCompare(b.title);
-    }
-    return a.startTime.localeCompare(b.startTime);
-  });
-
-  talksContainer.innerHTML = sortedTalks
+  
+  talksContainer.innerHTML = payload.talks
     .map(
       (talk) => `
       <div class="panel">
@@ -139,9 +156,11 @@ async function loadTalks(): Promise<void> {
 
 async function loadSessions(): Promise<void> {
   const query = queryInput.value.trim();
+  const sessionType = sessionTypeSelect.value.trim();
   const sortBy = sortSelect.value;
   const params = new URLSearchParams();
   if (query) params.set("q", query);
+  if (sessionType) params.set("sessionType", sessionType);
   if (sortBy) params.set("sortBy", sortBy);
 
   const response = await fetch(`${API_BASE}/sessions?${params.toString()}`);

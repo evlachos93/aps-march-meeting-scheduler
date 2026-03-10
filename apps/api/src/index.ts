@@ -17,6 +17,7 @@ app.get("/talks", (req, res) => {
   const q = String(req.query.q ?? "").trim().toLowerCase();
   const topic = String(req.query.topic ?? "").trim().toLowerCase();
   const track = String(req.query.track ?? "").trim().toLowerCase();
+  const sortBy = String(req.query.sortBy ?? "time").trim().toLowerCase();
 
   const filtered = getTalks().filter((talk) => {
     const matchesQuery =
@@ -29,7 +30,18 @@ app.get("/talks", (req, res) => {
     return matchesQuery && matchesTopic && matchesTrack;
   });
 
-  res.json({ talks: filtered });
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "title") {
+      return a.title.localeCompare(b.title);
+    }
+    if (sortBy === "track") {
+      const byTrack = a.track.localeCompare(b.track);
+      if (byTrack !== 0) return byTrack;
+    }
+    return a.startTime.localeCompare(b.startTime);
+  });
+
+  res.json({ talks: sorted });
 });
 
 app.get("/sessions", (req, res) => {
