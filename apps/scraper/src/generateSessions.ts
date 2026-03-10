@@ -56,6 +56,11 @@ const PREFERENCES_PATH = new URL("../../../data/session-preferences.txt", import
 const DEFAULT_OUTPUT_RELATIVE = "data/sessions.json";
 const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
+const LLM_API_URL = process.env.SESSIONS_LLM_API_URL ?? "https://api.githubcopilot.com/chat/completions";
+const LLM_MODEL = process.env.SESSIONS_LLM_MODEL ?? "gpt-4o-mini";
+const LLM_BATCH_SIZE = Math.max(1, Number(process.env.SESSIONS_LLM_BATCH_SIZE ?? 20));
+const LLM_CONCURRENCY = 3;
+
 function getOutputPath(): string {
   const configured = process.env.SCRAPER_OUTPUT_FILE?.trim();
   const target = configured && configured.length > 0 ? configured : DEFAULT_OUTPUT_RELATIVE;
@@ -702,6 +707,134 @@ async function buildFallbackSessionsFromTalks(
   return [...bySessionCode.values()];
 }
 
+// ---------------------------------------------------------------------------
+// LLM-based relevance filter
+// ---------------------------------------------------------------------------
+
+type LLMDecision = { sessionCode: string; relevant: boolean; reason: string };
+
+async function classifySessionBatch(
+  batch: SessionItem[],
+  preferences: ParsedPreferences,
+  apiKey: string
+): Promise<LLMDecision[]> {
+  const interested = preferences.preferredPhrases.slice(0, 25).join(", ");
+  const avoid = preferences.avoidPhrases.slice(0, 25).join(", ");
+
+  const sessions = batch.map((s) => ({
+    code: s.sessionCode,
+    title: s.title,
+    talks: (s.talkTitles ?? []).slice(0, 12)
+  }));
+
+  const systemPrompt =
+    `You are a quantum computing researcher's conference schedule assistant.\n` +
+    `Your task: decide whether each session at the APS March Meeting is relevant to the researcher's interests.\n\n` +
+    `INTERESTED IN: ${interested}\n` +
+    `NOT INTERESTED IN: ${avoid}\n\n` +
+    `Rules:\n` +
+    `- RELEVANT: session is primarily about quantum computing hardware, algorithms, error correction, quantum information, or quantum sensing.\n` +
+    `- NOT RELEVANT: primarily concerns high-energy physics, nuclear physics, astrophysics, condensed matter theory unrelated to qubits, or uses quantum computers only as an incidental tool for unrelated physics.\n` +
+    `- When genuinely uncertain, mark as relevant.\n\n` +
+    `Respond ONLY with valid JSON (no markdown fences): {"decisions": [{"sessionCode": "...", "relevant": true, "reason": "brief reason"}, ...]}`;
+
+  const response = await fetch(LLM_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: LLM_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: JSON.stringify(sessions) }
+      ],
+      temperature: 0,
+      response_format: { type: "json_object" }
+    })
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`LLM API ${response.status}: ${text.slice(0, 200)}`);
+  }
+
+  const payload = (await response.json()) as { choices: Array<{ message: { content: string } }> };
+  const content = payload.choices[0]?.message?.content;
+  if (!content) throw new Error("LLM returned empty content");
+
+  const parsed = JSON.parse(content) as { decisions?: unknown };
+  if (!Array.isArray(parsed.decisions)) throw new Error("LLM response missing decisions array");
+
+  return (parsed.decisions as unknown[]).filter(
+    (d): d is LLMDecision =>
+      typeof d === "object" && d !== null &&
+      typeof (d as LLMDecision).sessionCode === "string" &&
+      typeof (d as LLMDecision).relevant === "boolean"
+  );
+}
+
+async function filterSessionsWithLLM(
+  sessions: SessionItem[],
+  preferences: ParsedPreferences
+): Promise<SessionItem[]> {
+  const apiKey = (process.env.GITHUB_TOKEN ?? process.env.OPENAI_API_KEY)?.trim();
+  if (!apiKey) {
+    console.warn("LLM filter skipped: GITHUB_TOKEN (or OPENAI_API_KEY) not set");
+    return sessions;
+  }
+
+  const batches: SessionItem[][] = [];
+  for (let i = 0; i < sessions.length; i += LLM_BATCH_SIZE) {
+    batches.push(sessions.slice(i, i + LLM_BATCH_SIZE));
+  }
+
+  console.log("LLM filter start", { sessions: sessions.length, batches: batches.length, model: LLM_MODEL, batchSize: LLM_BATCH_SIZE });
+
+  const decisionMap = new Map<string, boolean>();
+  let failedBatches = 0;
+
+  const batchResults = await mapConcurrent(batches, LLM_CONCURRENCY, async (batch) => {
+    try {
+      return await classifySessionBatch(batch, preferences, apiKey);
+    } catch (err) {
+      console.warn("LLM batch failed, keeping sessions", err instanceof Error ? err.message : String(err));
+      failedBatches += 1;
+      return batch.map((s): LLMDecision => ({ sessionCode: s.sessionCode, relevant: true, reason: "batch error – kept" }));
+    }
+  });
+
+  for (const decisions of batchResults) {
+    for (const d of decisions) {
+      decisionMap.set(d.sessionCode, d.relevant);
+    }
+  }
+
+  const dropped: Array<{ sessionCode: string; title: string; reason: string }> = [];
+  const filtered = sessions.filter((s) => {
+    if (decisionMap.get(s.sessionCode) === false) {
+      const decision = batchResults.flat().find((d) => d.sessionCode === s.sessionCode);
+      dropped.push({ sessionCode: s.sessionCode, title: s.title, reason: decision?.reason ?? "unknown" });
+      return false;
+    }
+    return true;
+  });
+
+  console.log("LLM filter diagnostics", {
+    input: sessions.length,
+    output: filtered.length,
+    dropped: dropped.length,
+    failedBatches
+  });
+
+  if (dropped.length > 0) {
+    console.log("LLM filter — dropped sessions:");
+    for (const { sessionCode, title, reason } of dropped) {
+      console.log(`  [${sessionCode}] ${title} — ${reason}`);
+    }
+  }
+
+  return filtered;
+}
+
 async function run(): Promise<void> {
   const talksPayloadRaw = await readFile(TALKS_PATH, "utf-8");
   const preferencesRaw = await readFile(PREFERENCES_PATH, "utf-8");
@@ -777,7 +910,11 @@ async function run(): Promise<void> {
     note: "No score-based filtering applied; talk-title preferred-phrase filtering happens during enrichment"
   });
 
-  const qcRelevantSessions = await enrichSessionsWithTalkTitles(sessions, preferences);
+  const enrichedSessions = await enrichSessionsWithTalkTitles(sessions, preferences);
+  const qcRelevantSessions =
+    process.env.SESSIONS_LLM_FILTER === "1"
+      ? await filterSessionsWithLLM(enrichedSessions, preferences)
+      : enrichedSessions;
 
   const outputPath = getOutputPath();
   const output: GeneratedSessions = {

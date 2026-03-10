@@ -199,7 +199,7 @@ export function parsePreferences(input: string): ParsedPreferences {
 
   for (const lineRaw of input.split("\n")) {
     const line = lineRaw.trim();
-    if (!line) {
+    if (!line || line.startsWith("#")) {
       continue;
     }
 
