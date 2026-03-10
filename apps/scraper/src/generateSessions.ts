@@ -930,22 +930,21 @@ async function run(): Promise<void> {
     note: "No score-based filtering applied; talk-title preferred-phrase filtering happens during enrichment"
   });
 
-  // Run LLM filter before enrichment so we only pay the enrichment cost
-  // (presentation-title network fetches) for sessions that survive LLM screening.
-  let sessionsToEnrich = sessions;
+  stageStart = performance.now();
+  const enrichedSessions = await enrichSessionsWithTalkTitles(sessions, preferences);
+  console.log(`stage [enrichment] done in ${elapsed(stageStart)} — ${enrichedSessions.length} sessions`);
+
+  // Optional final-pass LLM pruning on already-enriched sessions.
+  let finalSessions = enrichedSessions;
   if (process.env.SESSIONS_LLM_FILTER === "1") {
     if (LLM_API_URL && LLM_API_KEY) {
       stageStart = performance.now();
-      sessionsToEnrich = await filterSessionsWithLLM(sessions, preferences, LLM_API_URL, LLM_API_KEY, LLM_MODEL);
-      console.log(`stage [llm-filter] done in ${elapsed(stageStart)} — ${sessionsToEnrich.length} sessions`);
+      finalSessions = await filterSessionsWithLLM(enrichedSessions, preferences, LLM_API_URL, LLM_API_KEY, LLM_MODEL);
+      console.log(`stage [llm-filter] done in ${elapsed(stageStart)} — ${finalSessions.length} sessions`);
     } else {
       console.warn("LLM filter skipped: API key/url not set; skipping llm filtering");
     }
   }
-
-  stageStart = performance.now();
-  const qcRelevantSessions = await enrichSessionsWithTalkTitles(sessionsToEnrich, preferences);
-  console.log(`stage [enrichment] done in ${elapsed(stageStart)} — ${qcRelevantSessions.length} sessions`);
 
   const outputPath = getOutputPath();
   const output: GeneratedSessions = {
@@ -956,11 +955,11 @@ async function run(): Promise<void> {
     preferencesFile: "data/session-preferences.txt",
     parsedPreferences: preferences,
     summary: {
-      totalInterestingSessions: qcRelevantSessions.length,
+      totalInterestingSessions: finalSessions.length,
       totalQueriesUsed: queries.length,
       usedFallback
     },
-    sessions: qcRelevantSessions.map((session) => {
+    sessions: finalSessions.map((session) => {
       const timing = sessionTimingIndex.get(session.sessionCode) ?? {
         timeRange: "TBD",
         timingSource: "none"
