@@ -83,3 +83,10 @@ select {
 .hidden {
   display: none;
 }
+
+.stats {
+  font-size: 0.85rem;
+  color: #6b7f8e;
+  padding: 4px 2px 8px;
+  min-height: 1.4em;
+}

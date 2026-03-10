@@ -61,10 +61,12 @@ app.innerHTML = `
     <button id="load">Find</button>
     <button id="export">Export .ics</button>
   </div>
+  <div id="stats" class="stats"></div>
   <div id="talks"></div>
 `;
 
 const talksContainer = document.querySelector<HTMLDivElement>("#talks")!;
+const statsContainer = document.querySelector<HTMLDivElement>("#stats")!;
 if (!talksContainer) throw new Error("Talk list root missing");
 
 const viewSelect = document.querySelector<HTMLSelectElement>("#view")!;
@@ -136,7 +138,8 @@ async function loadTalks(): Promise<void> {
   const response = await fetch(url);
   const payload = (await response.json()) as { talks: Talk[] };
   console.log(`[loadTalks] Received ${payload.talks.length} talks`);
-  
+  statsContainer.textContent = `${payload.talks.length} talk${payload.talks.length === 1 ? "" : "s"} found`;
+
   talksContainer.innerHTML = payload.talks
     .map(
       (talk) => `
@@ -166,6 +169,8 @@ async function loadSessions(): Promise<void> {
   const response = await fetch(url);
   const payload = (await response.json()) as { sessions: Session[] };
   console.log(`[loadSessions] Received ${payload.sessions.length} sessions`);
+  statsContainer.textContent = `${payload.sessions.length} session${payload.sessions.length === 1 ? "" : "s"} found`;
+
   talksContainer.innerHTML = payload.sessions
     .map((session, index) => {
       const detailsId = `session-talks-${index}`;
