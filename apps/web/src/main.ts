@@ -136,8 +136,11 @@ async function loadTalks(): Promise<void> {
   if (track) params.set("track", track);
   if (sortBy) params.set("sortBy", sortBy);
 
-  const response = await fetch(`${API_BASE}/talks?${params.toString()}`);
+  const url = `${API_BASE}/talks?${params.toString()}`;
+  console.log(`[loadTalks] Fetching: ${url}`);
+  const response = await fetch(url);
   const payload = (await response.json()) as { talks: Talk[] };
+  console.log(`[loadTalks] Received ${payload.talks.length} talks`);
   
   talksContainer.innerHTML = payload.talks
     .map(
@@ -163,8 +166,11 @@ async function loadSessions(): Promise<void> {
   if (sessionType) params.set("sessionType", sessionType);
   if (sortBy) params.set("sortBy", sortBy);
 
-  const response = await fetch(`${API_BASE}/sessions?${params.toString()}`);
+  const url = `${API_BASE}/sessions?${params.toString()}`;
+  console.log(`[loadSessions] Fetching: ${url}`);
+  const response = await fetch(url);
   const payload = (await response.json()) as { sessions: Session[] };
+  console.log(`[loadSessions] Received ${payload.sessions.length} sessions`);
   talksContainer.innerHTML = payload.sessions
     .map((session, index) => {
       const detailsId = `session-talks-${index}`;

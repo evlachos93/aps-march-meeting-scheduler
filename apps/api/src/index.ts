@@ -19,6 +19,8 @@ app.get("/talks", (req, res) => {
   const track = String(req.query.track ?? "").trim().toLowerCase();
   const sortBy = String(req.query.sortBy ?? "time").trim().toLowerCase();
 
+  console.log(`[API /talks] Filtering by q="${q}", topic="${topic}", track="${track}", sortBy="${sortBy}"`);
+
   const filtered = getTalks().filter((talk) => {
     const matchesQuery =
       !q ||
@@ -48,6 +50,8 @@ app.get("/sessions", (req, res) => {
   const q = String(req.query.q ?? "").trim().toLowerCase();
   const sessionType = String(req.query.sessionType ?? "").trim().toLowerCase();
   const sortBy = String(req.query.sortBy ?? "time").trim().toLowerCase();
+
+  console.log(`[API /sessions] Filtering by q="${q}", sessionType="${sessionType}", sortBy="${sortBy}"`);
 
   const filtered = getSessions().filter((session) => {
     const searchableText = [
