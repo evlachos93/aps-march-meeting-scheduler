@@ -41,22 +41,24 @@ Generated files are written to:
 - `data/sessions.json`
 
 3. (Optional) Filter data using LLM
-4. 
-5. 
 
-6. Start the API server:
+    Feed the data into your favorite LLM with the appropriate prompt
+    to customize list of talks/sessions. For example, you can choose
+    to include only talks related to quantum error correction.
+
+4. Start the API server:
 
 ```bash
 npm run dev:api
 ```
 
-4. Start the web app:
+5. Start the web app:
 
 ```bash
 npm run dev:web
 ```
 
-5. Open the web app URL shown by Vite (usually `http://localhost:5173`).
+6. Open the web app URL shown by Vite (usually `http://localhost:5173`).
 
 The web app reads data from the API, and the API serves local data files from `data/`.
 If your generated file names are the defaults above, they are ready to use with no extra step.
