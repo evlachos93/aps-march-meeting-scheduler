@@ -64,3 +64,22 @@ select {
   padding: 8px;
   background: #fff;
 }
+
+.session-talks {
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.session-talks ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.session-talks li {
+  margin-bottom: 6px;
+}
+
+.hidden {
+  display: none;
+}

@@ -1,7 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { buildIcs } from "./ics.js";
-import { addToSchedule, getTalks, getUserSchedule, removeFromSchedule } from "./store.js";
+import { addToSchedule, getSessions, getTalks, getUserSchedule, removeFromSchedule } from "./store.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 8787);
@@ -30,6 +30,53 @@ app.get("/talks", (req, res) => {
   });
 
   res.json({ talks: filtered });
+});
+
+app.get("/sessions", (req, res) => {
+  const q = String(req.query.q ?? "").trim().toLowerCase();
+  const sessionType = String(req.query.sessionType ?? "").trim().toLowerCase();
+  const sortBy = String(req.query.sortBy ?? "time").trim().toLowerCase();
+
+  const filtered = getSessions().filter((session) => {
+    const searchableText = [
+      session.sessionCode,
+      session.title,
+      session.sessionType,
+      session.room ?? "",
+      ...session.talkTitles
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    const matchesQuery = !q || searchableText.includes(q);
+    const matchesType = !sessionType || session.sessionType.toLowerCase() === sessionType;
+
+    return matchesQuery && matchesType;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "title") {
+      return a.title.localeCompare(b.title);
+    }
+
+    if (sortBy === "code") {
+      return a.sessionCode.localeCompare(b.sessionCode);
+    }
+
+    if (sortBy === "talk-count") {
+      return b.talkTitles.length - a.talkTitles.length;
+    }
+
+    const aTime = a.startTime ?? "9999-12-31T23:59:59Z";
+    const bTime = b.startTime ?? "9999-12-31T23:59:59Z";
+    const byTime = aTime.localeCompare(bTime);
+    if (byTime !== 0) {
+      return byTime;
+    }
+    return a.sessionCode.localeCompare(b.sessionCode);
+  });
+
+  res.json({ sessions: sorted });
 });
 
 app.get("/schedule/:userId", (req, res) => {

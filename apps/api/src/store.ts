@@ -1,11 +1,21 @@
-import talksJson from "../../../data/talks.sample.json" with { type: "json" };
-import type { ScheduleEntry, Talk } from "./types.js";
+import talksJson from "../../../data/talks.json" with { type: "json" };
+import sessionsJson from "../../../data/sessions.json" with { type: "json" };
+import type { ScheduleEntry, Session, SessionsPayload, Talk } from "./types.js";
 
-const talks = talksJson as Talk[];
+type TalksPayload = {
+  talks: Talk[];
+};
+
+const talks = Array.isArray(talksJson) ? (talksJson as Talk[]) : ((talksJson as TalksPayload).talks ?? []);
+const sessions = (sessionsJson as SessionsPayload).sessions ?? [];
 const scheduleByUser = new Map<string, Map<string, ScheduleEntry>>();
 
 export function getTalks(): Talk[] {
   return talks;
+}
+
+export function getSessions(): Session[] {
+  return sessions;
 }
 
 export function getUserSchedule(userId: string): ScheduleEntry[] {
