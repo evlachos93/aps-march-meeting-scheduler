@@ -78,7 +78,8 @@ In short: run scraper -> start API -> open web app.
    - **Topic** — populated from `data/ui-topics.json` (edit that file to customise the list)
    - **Track** — `Invited`, `Focus`, `Oral`, `Poster` (talks view only)
    - **Session type** — same values (sessions view only)
-   - **Sort** — start time, title, track (talks); start time, title, session code, talk count (sessions)
+    - **Day** — show only events taking place on a given weekday (All days by default)
+    - **Sort** — start time, title, track, day of week (talks); start time, title, session code, talk count, day of week (sessions)
 3. Click **Find** to run the search. A result count is shown below the filters.
 4. Talk titles link directly to the APS talk page. Session codes link to the APS session page.
 5. Click **Add to My Schedule** on talks you want to keep.

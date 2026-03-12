@@ -2,9 +2,67 @@ import cors from "cors";
 import express from "express";
 import { buildIcs } from "./ics.js";
 import { addToSchedule, getSessions, getTalks, getUiTopics, getUserSchedule, removeFromSchedule } from "./store.js";
+import type { Session } from "./types.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 8787);
+
+const WEEKDAY_ORDER: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6
+};
+
+function parseDay(value?: string): number | null {
+  if (!value) {
+    return null;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+  const direct = WEEKDAY_ORDER[normalized];
+  if (direct !== undefined) {
+    return direct;
+  }
+  const short = normalized.slice(0, 3);
+  const shortMatch = WEEKDAY_ORDER[short];
+  if (shortMatch !== undefined) {
+    return shortMatch;
+  }
+  return null;
+}
+
+function getWeekdayFromTimestamp(value?: string): number {
+  if (!value) {
+    return 7;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) {
+    return 7;
+  }
+  return date.getUTCDay();
+}
+
+function getWeekdayFromLabel(value?: string): number {
+  if (!value) {
+    return 7;
+  }
+  const normalized = value.trim().toLowerCase();
+  return WEEKDAY_ORDER[normalized] ?? WEEKDAY_ORDER[normalized.slice(0, 3)] ?? 7;
+}
+
+function getSessionWeekday(session: Session): number {
+  const fromTimestamp = getWeekdayFromTimestamp(session.startTime);
+  if (fromTimestamp !== 7) {
+    return fromTimestamp;
+  }
+  return getWeekdayFromLabel(session.weekday);
+}
 
 app.use(cors());
 app.use(express.json());
@@ -22,8 +80,9 @@ app.get("/talks", (req, res) => {
   const topic = String(req.query.topic ?? "").trim().toLowerCase();
   const track = String(req.query.track ?? "").trim().toLowerCase();
   const sortBy = String(req.query.sortBy ?? "time").trim().toLowerCase();
+  const dayFilter = parseDay(String(req.query.day ?? ""));
 
-  console.log(`[API /talks] Filtering by q="${q}", topic="${topic}", track="${track}", sortBy="${sortBy}"`);
+  console.log(`[API /talks] Filtering by q="${q}", topic="${topic}", track="${track}", sortBy="${sortBy}", day="${req.query.day ?? ""}"`);
 
   const filtered = getTalks().filter((talk) => {
     const matchesQuery =
@@ -33,10 +92,18 @@ app.get("/talks", (req, res) => {
       talk.speakers.some((s) => s.toLowerCase().includes(q));
     const matchesTopic = !topic || talk.topics.some((t) => t.toLowerCase() === topic);
     const matchesTrack = !track || talk.track.toLowerCase() === track;
-    return matchesQuery && matchesTopic && matchesTrack;
+    const matchesDay = dayFilter === null || getWeekdayFromTimestamp(talk.startTime) === dayFilter;
+    return matchesQuery && matchesTopic && matchesTrack && matchesDay;
   });
 
   const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "weekday") {
+      const weekdayDiff = getWeekdayFromTimestamp(a.startTime) - getWeekdayFromTimestamp(b.startTime);
+      if (weekdayDiff !== 0) {
+        return weekdayDiff;
+      }
+      return a.startTime.localeCompare(b.startTime);
+    }
     if (sortBy === "title") {
       return a.title.localeCompare(b.title);
     }
@@ -54,8 +121,9 @@ app.get("/sessions", (req, res) => {
   const q = String(req.query.q ?? "").trim().toLowerCase();
   const sessionType = String(req.query.sessionType ?? "").trim().toLowerCase();
   const sortBy = String(req.query.sortBy ?? "time").trim().toLowerCase();
+  const dayFilter = parseDay(String(req.query.day ?? ""));
 
-  console.log(`[API /sessions] Filtering by q="${q}", sessionType="${sessionType}", sortBy="${sortBy}"`);
+  console.log(`[API /sessions] Filtering by q="${q}", sessionType="${sessionType}", sortBy="${sortBy}", day="${req.query.day ?? ""}"`);
 
   const filtered = getSessions().filter((session) => {
     const searchableText = [
@@ -71,10 +139,23 @@ app.get("/sessions", (req, res) => {
     const matchesQuery = !q || searchableText.includes(q);
     const matchesType = !sessionType || session.sessionType.toLowerCase() === sessionType;
 
-    return matchesQuery && matchesType;
+    const matchesDay = dayFilter === null || getSessionWeekday(session) === dayFilter;
+    return matchesQuery && matchesType && matchesDay;
   });
 
   const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "weekday") {
+      const weekdayDiff = getSessionWeekday(a) - getSessionWeekday(b);
+      if (weekdayDiff !== 0) {
+        return weekdayDiff;
+      }
+      const aTime = a.startTime ?? "";
+      const bTime = b.startTime ?? "";
+      if (aTime || bTime) {
+        return aTime.localeCompare(bTime);
+      }
+      return a.sessionCode.localeCompare(b.sessionCode);
+    }
     if (sortBy === "title") {
       return a.title.localeCompare(b.title);
     }
