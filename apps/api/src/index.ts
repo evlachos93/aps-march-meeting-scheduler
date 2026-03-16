@@ -2,10 +2,15 @@ import cors from "cors";
 import express from "express";
 import { buildIcs } from "./ics.js";
 import { addToSchedule, getDailySummary, getSessions, getTalks, getUiTopics, getUserSchedule, removeFromSchedule } from "./store.js";
-import type { Session } from "./types.js";
+import type { AiSummary, AiSummaryHighlight, AiSummaryTopic, Session } from "./types.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 8787);
+const LLM_API_URL = process.env.SESSIONS_LLM_API_URL?.trim();
+const LLM_API_KEY = process.env.SESSIONS_LLM_API_KEY?.trim();
+const LLM_MODEL = process.env.SESSIONS_LLM_MODEL?.trim() ?? "gpt-4o-mini";
+const SUMMARY_TALK_CONTEXT_LIMIT = 18;
+const SUMMARY_RESPONSE_TEMPERATURE = 0.3;
 
 const WEEKDAY_ORDER: Record<string, number> = {
   sunday: 0,
@@ -119,6 +124,148 @@ function isInTimeSlot(startTime: string | undefined, endTime: string | undefined
   return startMinutes < slotRange.end && endMinutes > slotRange.start;
 }
 
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isAiSummaryAvailable(): boolean {
+  return Boolean(LLM_API_URL && LLM_API_KEY);
+}
+
+function isoDateFromTimestamp(value?: string): string | null {
+  if (!value) {
+    return null;
+  }
+  const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : null;
+}
+
+function formatTalkTimeRange(talk: Talk): string {
+  const format = (timestamp?: string): string => {
+    if (!timestamp) {
+      return "TBD";
+    }
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.valueOf())) {
+      return "TBD";
+    }
+    const hours = String(date.getUTCHours()).padStart(2, "0");
+    const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
+  const start = format(talk.startTime);
+  const end = format(talk.endTime);
+  return `${start}–${end}`;
+}
+
+function buildTalkContext(talks: Talk[]): string {
+  return talks
+    .slice(0, SUMMARY_TALK_CONTEXT_LIMIT)
+    .map((talk) => {
+      const topics = talk.topics.length ? talk.topics.join(", ") : "general";
+      const room = talk.room ? ` | room: ${talk.room}` : "";
+      return `• ${talk.title} | ${talk.track} | ${formatTalkTimeRange(talk)} | topics: ${topics}${room}`;
+    })
+    .join("\n");
+}
+
+function normalizeTopic(input: unknown): AiSummaryTopic | null {
+  if (typeof input !== "object" || input === null) {
+    return null;
+  }
+  const candidate = input as Record<string, unknown>;
+  const name = typeof candidate.name === "string" ? candidate.name.trim() : "";
+  const detail = typeof candidate.detail === "string" ? candidate.detail.trim() : "";
+  if (!name || !detail) {
+    return null;
+  }
+  return { name, detail };
+}
+
+function normalizeHighlight(input: unknown): AiSummaryHighlight | null {
+  if (typeof input !== "object" || input === null) {
+    return null;
+  }
+  const candidate = input as Record<string, unknown>;
+  const title = typeof candidate.title === "string" ? candidate.title.trim() : "";
+  const reason = typeof candidate.reason === "string" ? candidate.reason.trim() : "";
+  if (!title || !reason) {
+    return null;
+  }
+  const talkId = typeof candidate.talkId === "string" && candidate.talkId.trim() ? candidate.talkId.trim() : undefined;
+  return { title, reason, talkId };
+}
+
+function parseAiSummaryPayload(content: string, date: string): AiSummary {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch (err) {
+    throw new Error(`LLM response could not be parsed as JSON: ${(err as Error).message}`);
+  }
+  if (typeof parsed !== "object" || parsed === null) {
+    throw new Error("LLM response is not an object");
+  }
+  const payload = parsed as Record<string, unknown>;
+  const overview = typeof payload.overview === "string" ? payload.overview.trim() : "";
+  if (!overview) {
+    throw new Error("LLM response missing overview");
+  }
+  const rawTopics = Array.isArray(payload.topics) ? payload.topics : [];
+  const topics = rawTopics.map(normalizeTopic).filter((item): item is AiSummaryTopic => Boolean(item));
+  if (!topics.length) {
+    throw new Error("LLM response missing topic breakdown");
+  }
+  const rawHighlights = Array.isArray(payload.highlights) ? payload.highlights : [];
+  const highlights = rawHighlights
+    .map(normalizeHighlight)
+    .filter((item): item is AiSummaryHighlight => Boolean(item));
+
+  return {
+    date,
+    overview,
+    topics,
+    highlights: highlights.length ? highlights : undefined
+  };
+}
+
+async function generateAiSummary(date: string, talks: Talk[]): Promise<AiSummary> {
+  if (!LLM_API_URL || !LLM_API_KEY) {
+    throw new Error("LLM configuration missing");
+  }
+
+  const talkContext = buildTalkContext(talks);
+  const userPrompt = `Summarize the APS March Meeting activities for ${date}. Provide an overview that highlights the most interesting topics and a sense of what attendees can expect. Include any emerging themes or cross-cutting threads. Use the following talks to ground your answer:\n${talkContext}\nReturn only valid JSON with the structure {"overview": "...", "topics": [{"name": "...", "detail": "..."}, ...], "highlights": [{"title": "...", "talkId": "...", "reason": "..."}, ...]}. Do not wrap the JSON in markdown.`;
+
+  const response = await fetch(LLM_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${LLM_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: LLM_MODEL,
+      messages: [
+        { role: "system", content: "You are a conference research assistant for quantum computing." },
+        { role: "user", content: userPrompt }
+      ],
+      temperature: SUMMARY_RESPONSE_TEMPERATURE,
+      response_format: { type: "json_object" }
+    })
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`LLM API ${response.status}: ${text.slice(0, 200)}`);
+  }
+
+  const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  const content = payload.choices?.[0]?.message?.content?.trim();
+  if (!content) {
+    throw new Error("LLM returned empty content");
+  }
+
+  return parseAiSummaryPayload(content, date);
+}
+
 app.use(cors());
 app.use(express.json());
 
@@ -128,6 +275,10 @@ app.get("/health", (_req, res) => {
 
 app.get("/topics", (_req, res) => {
   res.json({ topics: getUiTopics() });
+});
+
+app.get("/summaries/capabilities", (_req, res) => {
+  res.json({ aiSummaryEnabled: isAiSummaryAvailable() });
 });
 
 app.get("/summaries", (req, res) => {
@@ -145,6 +296,30 @@ app.get("/summaries", (req, res) => {
   }
 
   res.json({ summary });
+});
+
+app.post("/summaries", async (req, res) => {
+  if (!isAiSummaryAvailable()) {
+    return res.status(503).json({ error: "AI summary endpoint is not configured" });
+  }
+
+  const date = String(req.body?.date ?? "").trim();
+  if (!DATE_PATTERN.test(date)) {
+    return res.status(400).json({ error: "date must be provided in yyyy-mm-dd format" });
+  }
+
+  const talks = getTalks().filter((talk) => isoDateFromTimestamp(talk.startTime) === date);
+  if (!talks.length) {
+    return res.status(404).json({ error: "no talks found for the requested date" });
+  }
+
+  try {
+    const summary = await generateAiSummary(date, talks);
+    res.json({ summary });
+  } catch (err) {
+    console.error("[AI summary]", err);
+    res.status(502).json({ error: "Failed to generate AI summary" });
+  }
 });
 
 app.get("/talks", (req, res) => {

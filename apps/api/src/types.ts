@@ -47,3 +47,25 @@ export type DailySummary = {
 export type DailySummariesPayload = {
   summaries: Record<string, DailySummary>;
 };
+
+export type AiSummaryTopic = {
+  name: string;
+  detail: string;
+};
+
+export type AiSummaryHighlight = {
+  talkId?: string;
+  title: string;
+  reason: string;
+};
+
+export type AiSummary = {
+  date: string;
+  overview: string;
+  topics: AiSummaryTopic[];
+  highlights?: AiSummaryHighlight[];
+};
+
+export type AiSummaryResponse = {
+  summary: AiSummary;
+};

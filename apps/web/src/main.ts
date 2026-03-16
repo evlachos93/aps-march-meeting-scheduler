@@ -87,6 +87,24 @@ app.innerHTML = `
         </select>
         <button id="load">Find</button>
       </div>
+      <div id="summary-card" class="summary-card hidden">
+        <div class="summary-card-header">
+          <div>
+            <p class="summary-card-label">AI insight</p>
+            <h2>Daily overview</h2>
+          </div>
+          <span id="summary-card-state" class="summary-card-state"></span>
+        </div>
+        <div class="summary-card-controls">
+          <label for="summary-date-select">Day</label>
+          <select id="summary-date-select">
+            <option value="">Select a day</option>
+          </select>
+          <button id="summary-generate" type="button" disabled>Generate AI summary</button>
+        </div>
+        <p id="summary-card-message" class="summary-card-message">Checking AI summary availability…</p>
+        <div id="summary-result" class="summary-panel hidden"></div>
+      </div>
       <div id="stats" class="stats"></div>
       <div id="talks"></div>
     </main>
@@ -106,6 +124,12 @@ app.innerHTML = `
 
 const talksContainer = document.querySelector<HTMLDivElement>("#talks")!;
 const statsContainer = document.querySelector<HTMLDivElement>("#stats")!;
+const summaryCard = document.querySelector<HTMLDivElement>("#summary-card")!;
+const summaryDateSelect = document.querySelector<HTMLSelectElement>("#summary-date-select")!;
+const summaryGenerateButton = document.querySelector<HTMLButtonElement>("#summary-generate")!;
+const summaryCardState = document.querySelector<HTMLSpanElement>("#summary-card-state")!;
+const summaryCardMessage = document.querySelector<HTMLParagraphElement>("#summary-card-message")!;
+const summaryResult = document.querySelector<HTMLDivElement>("#summary-result")!;
 const scheduleContainer = document.querySelector<HTMLDivElement>("#schedule-list")!;
 const scheduleCount = document.querySelector<HTMLSpanElement>("#schedule-count")!;
 if (!talksContainer || !statsContainer || !scheduleContainer || !scheduleCount) {
@@ -249,20 +273,6 @@ async function loadSchedule(): Promise<void> {
   }
 }
 
-async function loadSummary(date: string): Promise<{ overview: string; topTalkIds: string[] } | null> {
-  try {
-    const response = await fetch(`${API_BASE}/summaries?date=${encodeURIComponent(date)}`);
-    if (!response.ok) {
-      return null;
-    }
-    const payload = (await response.json()) as { summary: { overview: string; topTalkIds: string[] } };
-    return payload.summary;
-  } catch (err) {
-    console.warn(`[loadSummary] Failed to load summary for ${date}`, err);
-    return null;
-  }
-}
-
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -314,10 +324,9 @@ async function loadTalks(): Promise<void> {
     talksByDate.get(date)!.push(talk);
   }
 
-  // Render grouped talks with date headers and summary toggles
+  // Render grouped talks with date headers
   const html = Array.from(talksByDate.entries())
     .map(([date, talks]) => {
-      const summaryId = `summary-${date}`;
       const talksId = `talks-${date}`;
       const talksHtml = talks
         .map(
@@ -345,17 +354,14 @@ async function loadTalks(): Promise<void> {
         <div class="day-section">
           <div class="day-header">
             <h2>${formatDate(date)}</h2>
-            <button class="summary-toggle" data-date="${date}" data-summary-id="${summaryId}" type="button">
-              📋 Summary
-            </button>
           </div>
-          <div id="${summaryId}" class="summary-content hidden"></div>
           <div id="${talksId}" class="talks-list">${talksHtml}</div>
         </div>
       `;
     })
     .join("");
 
+  refreshSummaryOptions(Array.from(talksByDate.keys()));
   talksContainer.innerHTML = html;
 }
 
@@ -387,10 +393,9 @@ async function loadSessions(): Promise<void> {
     sessionsByDate.get(date)!.push(session);
   }
 
-  // Render grouped sessions with date headers and summary toggles
+  // Render grouped sessions with date headers
   const html = Array.from(sessionsByDate.entries())
     .map(([date, sessions]) => {
-      const summaryId = `summary-${date}`;
       const sessionsId = `sessions-${date}`;
       const sessionsHtml = sessions
         .map((session, index) => {
@@ -437,11 +442,7 @@ async function loadSessions(): Promise<void> {
         <div class="day-section">
           <div class="day-header">
             <h2>${formatDate(date)}</h2>
-            <button class="summary-toggle" data-date="${date}" data-summary-id="${summaryId}" type="button">
-              📋 Summary
-            </button>
           </div>
-          <div id="${summaryId}" class="summary-content hidden"></div>
           <div id="${sessionsId}" class="sessions-list">${sessionsHtml}</div>
         </div>
       `;
@@ -459,6 +460,171 @@ async function loadCurrentView(): Promise<void> {
   }
   await loadTalks();
 }
+
+type AiSummaryPayload = {
+  overview: string;
+  topics: { name: string; detail: string }[];
+  highlights?: { title: string; reason: string; talkId?: string }[];
+};
+
+type SummaryResponse = {
+  summary: AiSummaryPayload;
+};
+
+let summaryEnabled = false;
+let isGeneratingSummary = false;
+
+function updateSummaryButtonState(): void {
+  const hasDate = Boolean(summaryDateSelect.value);
+  summaryGenerateButton.disabled = !summaryEnabled || isGeneratingSummary || !hasDate;
+  summaryDateSelect.disabled = !summaryEnabled;
+}
+
+function refreshSummaryOptions(dates: string[]): void {
+  const sanitized = Array.from(new Set(dates.filter((value) => value && value !== "unknown"))).sort((a, b) => a.localeCompare(b));
+  const previousSelection = summaryDateSelect.value;
+  summaryDateSelect.innerHTML = `<option value="">Select a day</option>`;
+  for (const date of sanitized) {
+    const option = document.createElement("option");
+    option.value = date;
+    option.textContent = formatDate(date);
+    summaryDateSelect.appendChild(option);
+  }
+  if (previousSelection && sanitized.includes(previousSelection)) {
+    summaryDateSelect.value = previousSelection;
+  } else {
+    summaryDateSelect.value = "";
+  }
+  summaryResult.classList.add("hidden");
+  summaryResult.innerHTML = "";
+  if (summaryEnabled) {
+    summaryCardMessage.textContent = sanitized.length
+      ? "Pick a day and click Generate AI summary."
+      : "Filter talks to populate the day list.";
+  }
+  updateSummaryButtonState();
+}
+
+function applySummaryCapability(): void {
+  summaryCard.classList.remove("hidden");
+  summaryCardState.textContent = summaryEnabled ? "LLM ready" : "LLM not configured";
+  summaryCardMessage.textContent = summaryEnabled
+    ? "Pick a day and click Generate AI summary once the day appears."
+    : "AI summaries require the API URL and key to be configured.";
+  if (!summaryEnabled) {
+    summaryResult.classList.add("hidden");
+  }
+  updateSummaryButtonState();
+}
+
+async function initSummaryPanel(): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/summaries/capabilities`);
+    if (!response.ok) {
+      throw new Error(`status ${response.status}`);
+    }
+    const payload = (await response.json()) as { aiSummaryEnabled: boolean };
+    summaryEnabled = Boolean(payload.aiSummaryEnabled);
+  } catch (err) {
+    console.warn("[summary cap]", err);
+    summaryEnabled = false;
+  } finally {
+    applySummaryCapability();
+  }
+}
+
+function renderSummaryResponse(summary: AiSummaryPayload, date: string): void {
+  const topicsHtml = summary.topics
+    .map((topic) => `
+      <li>
+        <span>${escapeHtml(topic.name)}</span>
+        <p>${escapeHtml(topic.detail)}</p>
+      </li>
+    `)
+    .join("");
+  const highlightsHtml = summary.highlights?.length
+    ? `
+      <div class="summary-highlights">
+        <strong>Highlights</strong>
+        <ul>
+          ${summary.highlights
+            .map((highlight) => {
+              const reference = highlight.talkId
+                ? `<span class="summary-highlight-id">${escapeHtml(highlight.talkId)}</span> `
+                : "";
+              return `<li>${reference}<strong>${escapeHtml(highlight.title)}</strong><p>${escapeHtml(highlight.reason)}</p></li>`;
+            })
+            .join("")}
+        </ul>
+      </div>
+    `
+    : "";
+  summaryResult.innerHTML = `
+    <div class="summary-panel">
+      <p>${escapeHtml(summary.overview)}</p>
+      ${topicsHtml ? `<div class="summary-topics"><strong>Topics to watch</strong><ul>${topicsHtml}</ul></div>` : ""}
+      ${highlightsHtml}
+    </div>
+  `;
+  summaryResult.classList.remove("hidden");
+  summaryCardState.textContent = `Summary ready for ${formatDate(date)}`;
+}
+
+summaryDateSelect.addEventListener("change", () => {
+  summaryResult.classList.add("hidden");
+  summaryResult.innerHTML = "";
+  summaryCardMessage.textContent = summaryEnabled
+    ? "Pick a day and click Generate AI summary."
+    : "AI summaries require the API URL and key to be configured.";
+  summaryCardState.textContent = summaryEnabled ? "LLM ready" : "LLM not configured";
+  updateSummaryButtonState();
+});
+
+summaryGenerateButton.addEventListener("click", async () => {
+  const date = summaryDateSelect.value;
+  if (!date || isGeneratingSummary) {
+    return;
+  }
+  isGeneratingSummary = true;
+  updateSummaryButtonState();
+  summaryCardState.textContent = `Generating summary for ${formatDate(date)}…`;
+  summaryCardMessage.textContent = "Summarizing the day's talks…";
+  summaryResult.innerHTML = `<div class="summary-panel"><p>Generating summary…</p></div>`;
+  summaryResult.classList.remove("hidden");
+  try {
+    const response = await fetch(`${API_BASE}/summaries`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date })
+    });
+    const data = (await response.json().catch(() => null)) as unknown;
+    if (!response.ok) {
+      const errorMessage = (() => {
+        if (typeof data === "object" && data !== null) {
+          const candidate = data as Record<string, unknown>;
+          if (typeof candidate.error === "string") {
+            return candidate.error;
+          }
+        }
+        return `Status ${response.status}`;
+      })();
+      throw new Error(errorMessage);
+    }
+    if (!data || typeof data !== "object" || !("summary" in data)) {
+      throw new Error("AI summary format invalid");
+    }
+    renderSummaryResponse((data as SummaryResponse).summary, date);
+    summaryCardMessage.textContent = `Overview ready for ${formatDate(date)}.`;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    summaryResult.innerHTML = `<div class="summary-panel summary-error"><p>${escapeHtml(message)}</p></div>`;
+    summaryCardMessage.textContent = "An error occurred. Try again later.";
+    summaryCardState.textContent = "LLM error";
+  } finally {
+    isGeneratingSummary = false;
+    updateSummaryButtonState();
+  }
+});
 
 document.addEventListener("click", async (event) => {
   const target = event.target as HTMLElement;
@@ -531,49 +697,8 @@ document.addEventListener("click", async (event) => {
     target.textContent = expanded ? "Show talks" : "Hide talks";
     details.classList.toggle("hidden", expanded);
   }
-
-  if (target.classList.contains("summary-toggle")) {
-    const date = target.getAttribute("data-date");
-    const summaryId = target.getAttribute("data-summary-id");
-    if (!date || !summaryId) {
-      return;
-    }
-
-    const summaryContainer = document.getElementById(summaryId);
-    if (!summaryContainer) {
-      return;
-    }
-
-    const isHidden = summaryContainer.classList.contains("hidden");
-    
-    if (isHidden) {
-      // Loading summary
-      summaryContainer.textContent = "Loading summary...";
-      summaryContainer.classList.remove("hidden");
-      
-      const summary = await loadSummary(date);
-      if (summary) {
-        // Build summary HTML with top talks
-        const talksHtml = summary.topTalkIds.length > 0 
-          ? `<div class="top-talks"><strong>Top talks:</strong><ul>` + 
-            summary.topTalkIds.map(id => `<li>${escapeHtml(id)}</li>`).join("") + 
-            `</ul></div>`
-          : "";
-        summaryContainer.innerHTML = `
-          <div class="summary-panel">
-            <p>${escapeHtml(summary.overview)}</p>
-            ${talksHtml}
-          </div>
-        `;
-      } else {
-        summaryContainer.innerHTML = `<div class="summary-panel"><p>No summary available for this date.</p></div>`;
-      }
-    } else {
-      // Hide summary
-      summaryContainer.classList.add("hidden");
-    }
-  }
 });
+
 
 loadSchedule().catch((err) => {
   console.warn("[init] Could not load schedule", err);
@@ -627,4 +752,5 @@ trackSelect.style.display = "";
 sessionTypeSelect.style.display = "none";
 queryInput.placeholder = "Search talks";
 
+initSummaryPanel();
 initTopics().then(() => loadCurrentView());
