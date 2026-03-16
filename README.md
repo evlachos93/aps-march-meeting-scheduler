@@ -29,6 +29,30 @@ npm --workspace @aps/scraper run build
 npm --workspace @aps/scraper run start
 ```
 
+### Filter talks
+
+To narrow down the talks data (e.g., for Quantum Computing), you can use the advanced filtering script:
+
+1. **Keyword-based Filtering (Talks and Sessions)**:
+   Removes talks or sessions from a specified JSON file if certain keywords appear in a selected field. This command **overwrites** the input file and is case-insensitive.
+   
+   ```bash
+   npx ts-node apps/scraper/src/filterByKeywords.ts <filePath> <field> "keyword1, keyword2"
+   ```
+   
+   - **For Talks**: Use fields `topics`, `title`, or `abstract`.
+   - **For Sessions**: Use fields `title`, `talkTitles`, or `description`.
+   
+   Example (removing sessions with specific talk content):
+   ```bash
+   npx ts-node apps/scraper/src/filterByKeywords.ts data/sessions.json talkTitles "condensed matter, quantum dots"
+   ```
+   
+   Example (removing talks by title):
+   ```bash
+   npx ts-node apps/scraper/src/filterByKeywords.ts data/talks.json title "magnetism"
+   ```
+
 ### Scrape sessions
 
 ```bash
