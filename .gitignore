@@ -14,7 +14,6 @@ build/
 
 # Environment configs
 .env
-.env.*
 
 # Logs
 npm-debug.log*
