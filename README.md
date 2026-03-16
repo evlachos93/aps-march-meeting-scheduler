@@ -10,7 +10,7 @@ Lightweight tool for planning APS March Meeting 2026 attendance.
 
 ## Quick start
 
-1. Install dependencies:
+1. Install dependencies with `npm`. [Instructions](https://www.freecodecamp.org/news/how-to-install-node-js-and-npm-on-windows-2/) on setting up `npm` on Windows:
 
 ```bash
 npm install
