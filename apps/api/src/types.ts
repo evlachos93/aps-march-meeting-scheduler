@@ -34,3 +34,14 @@ export type Session = {
 export type SessionsPayload = {
   sessions: Session[];
 };
+
+export type DailySummary = {
+  date: string;
+  weekday: string;
+  overview: string;
+  topTalkIds: string[];
+};
+
+export type DailySummariesPayload = {
+  summaries: Record<string, DailySummary>;
+};

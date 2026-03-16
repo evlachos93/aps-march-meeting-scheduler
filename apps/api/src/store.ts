@@ -1,7 +1,8 @@
 import talksJson from "../../../data/talks.json" with { type: "json" };
 import sessionsJson from "../../../data/sessions.json" with { type: "json" };
 import uiTopicsJson from "../../../data/ui-topics.json" with { type: "json" };
-import type { ScheduleEntry, Session, SessionsPayload, Talk } from "./types.js";
+import dailySummariesJson from "../../../data/daily-summaries.json" with { type: "json" };
+import type { DailySummary, DailySummariesPayload, ScheduleEntry, Session, SessionsPayload, Talk } from "./types.js";
 
 type TalksPayload = {
   talks: Talk[];
@@ -12,6 +13,7 @@ const sessions = (sessionsJson as SessionsPayload).sessions ?? [];
 
 type UiTopic = { label: string; value: string };
 const uiTopics: UiTopic[] = Array.isArray(uiTopicsJson) ? (uiTopicsJson as UiTopic[]) : [];
+const dailySummaries: Record<string, DailySummary> = ((dailySummariesJson as DailySummariesPayload).summaries ?? {});
 const scheduleByUser = new Map<string, Map<string, ScheduleEntry>>();
 
 export function getTalks(): Talk[] {
@@ -24,6 +26,14 @@ export function getSessions(): Session[] {
 
 export function getUiTopics(): UiTopic[] {
   return uiTopics;
+}
+
+export function getDailySummaries(): Record<string, DailySummary> {
+  return dailySummaries;
+}
+
+export function getDailySummary(date: string): DailySummary | undefined {
+  return dailySummaries[date];
 }
 
 export function getUserSchedule(userId: string): ScheduleEntry[] {
