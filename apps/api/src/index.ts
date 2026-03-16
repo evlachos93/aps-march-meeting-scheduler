@@ -64,41 +64,59 @@ function getSessionWeekday(session: Session): number {
   return getWeekdayFromLabel(session.weekday);
 }
 
-function getHourFromTimestamp(value?: string): number {
+const MINUTES_PER_DAY = 24 * 60;
+const TIME_SLOT_RANGES: Record<string, { start: number; end: number }> = {
+  morning: { start: 8 * 60, end: 11 * 60 },
+  afternoon: { start: 11 * 60, end: 14 * 60 },
+  lateafternoon: { start: 14 * 60, end: MINUTES_PER_DAY }
+};
+
+function getLocalMinutesFromTimestamp(value?: string): number | null {
   if (!value) {
-    return -1;
+    return null;
   }
   const date = new Date(value);
   if (Number.isNaN(date.valueOf())) {
-    return -1;
+    return null;
   }
-  return date.getUTCHours();
+  const utcMinutes = date.getUTCHours() * 60 + date.getUTCMinutes();
+  let offsetMinutes = 0;
+  const offsetMatch = value.match(/([+-]\d{2})(?::?(\d{2}))?$/);
+  if (offsetMatch) {
+    const sign = offsetMatch[1].startsWith("-") ? -1 : 1;
+    const hours = Math.abs(Number(offsetMatch[1]));
+    const minutes = Number(offsetMatch[2] ?? "0");
+    offsetMinutes = sign * (hours * 60 + minutes);
+  } else if (/Z$/i.test(value)) {
+    offsetMinutes = 0;
+  }
+  const localMinutes = utcMinutes + offsetMinutes;
+  const normalized = ((localMinutes % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  return normalized;
 }
 
-function isInTimeSlot(startTime: string | undefined, timeSlot: string): boolean {
-  if (!startTime || !timeSlot || timeSlot === "all") {
+function isInTimeSlot(startTime: string | undefined, endTime: string | undefined, timeSlot: string): boolean {
+  if (!timeSlot || timeSlot === "all") {
     return true;
   }
-  const hour = getHourFromTimestamp(startTime);
-  if (hour === -1) {
+  const slotRange = TIME_SLOT_RANGES[timeSlot.toLowerCase()];
+  if (!slotRange) {
     return true;
   }
-  
-  const timeSlotLower = timeSlot.toLowerCase();
-  if (timeSlotLower === "morning") {
-    // 8 AM to 11 AM (hour 8-10)
-    return hour >= 8 && hour < 11;
+
+  const startMinutes = getLocalMinutesFromTimestamp(startTime);
+  if (startMinutes === null) {
+    return true;
   }
-  if (timeSlotLower === "afternoon") {
-    // 11 AM to 2 PM (hour 11-13)
-    return hour >= 11 && hour < 14;
+  let endMinutes = getLocalMinutesFromTimestamp(endTime);
+  if (endMinutes === null) {
+    endMinutes = startMinutes;
   }
-  if (timeSlotLower === "lateafternoon") {
-    // 2 PM to 5 PM (hour 14-16)
-    return hour >= 14 && hour < 17;
+  if (endMinutes < startMinutes) {
+    endMinutes += MINUTES_PER_DAY;
   }
-  
-  return true;
+
+  return startMinutes < slotRange.end && endMinutes > slotRange.start;
 }
 
 app.use(cors());
@@ -144,10 +162,14 @@ app.get("/talks", (req, res) => {
       talk.title.toLowerCase().includes(q) ||
       talk.abstract.toLowerCase().includes(q) ||
       talk.speakers.some((s) => s.toLowerCase().includes(q));
-    const matchesTopic = !topic || talk.topics.some((t) => t.toLowerCase() === topic);
+    const matchesTopic =
+      !topic ||
+      talk.topics.some((t) => t.toLowerCase() === topic) ||
+      talk.title.toLowerCase().includes(topic) ||
+      talk.abstract.toLowerCase().includes(topic);
     const matchesTrack = !track || talk.track.toLowerCase() === track;
     const matchesDay = dayFilter === null || getWeekdayFromTimestamp(talk.startTime) === dayFilter;
-    const matchesTimeSlot = isInTimeSlot(talk.startTime, timeSlot);
+    const matchesTimeSlot = isInTimeSlot(talk.startTime, talk.endTime, timeSlot);
     return matchesQuery && matchesTopic && matchesTrack && matchesDay && matchesTimeSlot;
   });
 
@@ -185,7 +207,7 @@ app.get("/sessions", (req, res) => {
     const matchesQuery = !q || searchableText.includes(q);
     const matchesType = !sessionType || session.sessionType.toLowerCase() === sessionType;
     const matchesDay = dayFilter === null || getSessionWeekday(session) === dayFilter;
-    const matchesTimeSlot = isInTimeSlot(session.startTime, timeSlot);
+    const matchesTimeSlot = isInTimeSlot(session.startTime, session.endTime, timeSlot);
     return matchesQuery && matchesType && matchesDay && matchesTimeSlot;
   });
 

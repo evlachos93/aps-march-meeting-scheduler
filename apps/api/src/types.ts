@@ -22,6 +22,7 @@ export type Session = {
   url: string;
   sessionType: string;
   talkTitles: string[];
+  talkIds: string[];
   date?: string;
   weekday?: string;
   startTime?: string;

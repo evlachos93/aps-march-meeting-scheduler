@@ -7,5 +7,7 @@
   { "label": "Information", "value": "quantum information" },
   { "label": "Sensing", "value": "quantum sensing" },
   { "label": "Simulations", "value": "quantum simulations" },
-  { "label": "Calibration", "value": "calibration" }
+  { "label": "Calibration", "value": "calibration" },
+  { "label": "Software", "value": "software"},
+  { "label": "Education", "value": "education"}
 ]

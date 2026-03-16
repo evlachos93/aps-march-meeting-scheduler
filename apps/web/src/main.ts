@@ -19,6 +19,7 @@ type Session = {
   url: string;
   sessionType: string;
   talkTitles: string[];
+  talkIds: string[];
   date?: string;
   weekday?: string;
   startTime?: string;
@@ -137,26 +138,24 @@ function getSelectedTimeSlot(): string {
 
 function getDateFromTimestamp(startTime?: string): string {
   if (!startTime) return "unknown";
-  try {
-    const date = new Date(startTime);
-    return date.toISOString().split("T")[0]; // Returns YYYY-MM-DD
-  } catch {
-    return "unknown";
-  }
+  const match = startTime.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : "unknown";
 }
 
 function formatDate(dateStr: string): string {
   if (dateStr === "unknown") return "Unknown date";
-  try {
-    const date = new Date(dateStr + "T00:00:00Z");
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "short",
-      day: "numeric"
-    });
-  } catch {
+  const parts = dateStr.split("-").map((segment) => Number(segment));
+  if (parts.length !== 3 || parts.some((value) => Number.isNaN(value))) {
     return dateStr;
   }
+  const [year, month, day] = parts;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC"
+  });
 }
 
 async function loadSchedule(): Promise<void> {
