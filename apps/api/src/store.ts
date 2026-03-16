@@ -1,3 +1,6 @@
+import { readFileSync, writeFileSync } from "fs";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 import talksJson from "../../../data/talks.json" with { type: "json" };
 import sessionsJson from "../../../data/sessions.json" with { type: "json" };
 import uiTopicsJson from "../../../data/ui-topics.json" with { type: "json" };
@@ -44,7 +47,7 @@ function normalizeTitleForLookup(value: string): string {
 }
 
 const talks = Array.isArray(talksJson) ? (talksJson as Talk[]) : ((talksJson as TalksPayload).talks ?? []);
-const rawSessions = (sessionsJson as SessionsPayload).sessions ?? [];
+const rawSessions = (sessionsJson as unknown as SessionsPayload).sessions ?? [];
 
 const talkTitleIndex = new Map<string, string>();
 for (const talk of talks) {
@@ -72,7 +75,49 @@ const sessions: Session[] = rawSessions.map((session) => {
 type UiTopic = { label: string; value: string };
 const uiTopics: UiTopic[] = Array.isArray(uiTopicsJson) ? (uiTopicsJson as UiTopic[]) : [];
 const dailySummaries: Record<string, DailySummary> = ((dailySummariesJson as DailySummariesPayload).summaries ?? {});
-const scheduleByUser = new Map<string, Map<string, ScheduleEntry>>();
+
+// Persistent schedule storage
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const scheduleFilePath = resolve(__dirname, "../../../data/schedule.json");
+
+type SchedulePayload = {
+  userSchedules: Record<string, ScheduleEntry[]>;
+};
+
+function loadScheduleFile(): Map<string, Map<string, ScheduleEntry>> {
+  try {
+    const content = readFileSync(scheduleFilePath, "utf-8");
+    const payload: SchedulePayload = JSON.parse(content);
+    const result = new Map<string, Map<string, ScheduleEntry>>();
+    
+    for (const [userId, entries] of Object.entries(payload.userSchedules ?? {})) {
+      const userMap = new Map<string, ScheduleEntry>();
+      for (const entry of entries) {
+        const key = `${entry.type}:${entry.id}`;
+        userMap.set(key, entry);
+      }
+      result.set(userId, userMap);
+    }
+    return result;
+  } catch (err) {
+    // File doesn't exist or is invalid; start fresh
+    return new Map<string, Map<string, ScheduleEntry>>();
+  }
+}
+
+function saveScheduleFile(scheduleByUser: Map<string, Map<string, ScheduleEntry>>): void {
+  const userSchedules: Record<string, ScheduleEntry[]> = {};
+  
+  for (const [userId, userMap] of scheduleByUser.entries()) {
+    userSchedules[userId] = Array.from(userMap.values());
+  }
+  
+  const payload: SchedulePayload = { userSchedules };
+  writeFileSync(scheduleFilePath, JSON.stringify(payload, null, 2), "utf-8");
+}
+
+const scheduleByUser = loadScheduleFile();
 
 export function getTalks(): Talk[] {
   return talks;
@@ -98,18 +143,25 @@ export function getUserSchedule(userId: string): ScheduleEntry[] {
   return [...(scheduleByUser.get(userId)?.values() ?? [])];
 }
 
-export function addToSchedule(userId: string, talkId: string): ScheduleEntry {
+export function addToSchedule(userId: string, id: string, type: "talk" | "session"): ScheduleEntry {
   const userSchedule = scheduleByUser.get(userId) ?? new Map<string, ScheduleEntry>();
-  const entry: ScheduleEntry = { talkId, addedAt: new Date().toISOString() };
-  userSchedule.set(talkId, entry);
+  const key = `${type}:${id}`;
+  const entry: ScheduleEntry = { id, type, addedAt: new Date().toISOString() };
+  userSchedule.set(key, entry);
   scheduleByUser.set(userId, userSchedule);
+  saveScheduleFile(scheduleByUser);
   return entry;
 }
 
-export function removeFromSchedule(userId: string, talkId: string): boolean {
+export function removeFromSchedule(userId: string, id: string, type: "talk" | "session"): boolean {
   const userSchedule = scheduleByUser.get(userId);
   if (!userSchedule) {
     return false;
   }
-  return userSchedule.delete(talkId);
+  const key = `${type}:${id}`;
+  const removed = userSchedule.delete(key);
+  if (removed) {
+    saveScheduleFile(scheduleByUser);
+  }
+  return removed;
 }

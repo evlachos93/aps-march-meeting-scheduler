@@ -165,34 +165,44 @@ async function loadSchedule(): Promise<void> {
     if (!response.ok) {
       throw new Error("schedule request failed");
     }
-    const payload = (await response.json()) as { talks: Talk[] };
+    const payload = (await response.json()) as { talks?: Talk[]; sessions?: Session[] };
     const savedTalks = Array.isArray(payload.talks) ? payload.talks : [];
-    scheduleCount.textContent = `${savedTalks.length} talk${savedTalks.length === 1 ? "" : "s"}`;
+    const savedSessions = Array.isArray(payload.sessions) ? payload.sessions : [];
+    const totalItems = savedTalks.length + savedSessions.length;
 
-    if (!savedTalks.length) {
+    scheduleCount.textContent = `${totalItems} item${totalItems === 1 ? "" : "s"}`;
+
+    if (!totalItems) {
       scheduleContainer.innerHTML = `
         <div class="schedule-empty">
-          No talks saved yet. Use the buttons on the left to build your agenda.
+          No talks or sessions saved yet. Use the buttons on the left to build your agenda.
         </div>
       `;
       return;
     }
 
-    scheduleContainer.innerHTML = savedTalks
+    const talkItems = savedTalks
       .map(
         (talk) => `
-          <article class="schedule-item">
+          <article class="schedule-item schedule-item-talk">
             <div>
               <p class="schedule-item-title">${escapeHtml(talk.title)}</p>
               <p class="schedule-item-meta">
                 ${escapeHtml(talk.track)} | ${escapeHtml(formatDateTime(talk.startTime))}
               </p>
               <p class="schedule-item-room">${escapeHtml(talk.room)}</p>
+              <a
+                href="${buildGCalUrl(talk.title, talk.startTime, talk.endTime, talk.room, talk.abstract.slice(0, 200))}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="gcal-link gcal-link-sm"
+              >Add to Google Calendar</a>
             </div>
             <button
               class="schedule-action remove-schedule"
               type="button"
-              data-talk-id="${talk.id}"
+              data-item-id="${talk.id}"
+              data-item-type="talk"
             >
               Remove
             </button>
@@ -200,9 +210,41 @@ async function loadSchedule(): Promise<void> {
         `
       )
       .join("\n");
+
+    const sessionItems = savedSessions
+      .map(
+        (session) => `
+          <article class="schedule-item schedule-item-session">
+            <div>
+              <p class="schedule-item-title">${escapeHtml(session.title)}</p>
+              <p class="schedule-item-meta">
+                ${escapeHtml(session.sessionType)} | ${escapeHtml(session.timeRange)}
+              </p>
+              <p class="schedule-item-room">${escapeHtml(session.room || "Room TBD")}</p>
+              ${session.startTime && session.endTime ? `<a
+                href="${buildGCalUrl(session.title, session.startTime, session.endTime, session.room ?? '', session.talkTitles.length + ' talks\n' + session.url)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="gcal-link gcal-link-sm"
+              >Add to Google Calendar</a>` : ''}
+            </div>
+            <button
+              class="schedule-action remove-schedule"
+              type="button"
+              data-item-id="${session.sessionCode}"
+              data-item-type="session"
+            >
+              Remove
+            </button>
+          </article>
+        `
+      )
+      .join("\n");
+
+    scheduleContainer.innerHTML = talkItems + sessionItems;
   } catch (err) {
     console.warn("[loadSchedule]", err);
-    scheduleCount.textContent = "0 talks";
+    scheduleCount.textContent = "0 items";
     scheduleContainer.innerHTML = `<div class="schedule-error">Couldn\'t load your schedule yet.</div>`;
   }
 }
@@ -228,6 +270,18 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function buildGCalUrl(title: string, startTime: string, endTime: string, location: string, details: string): string {
+  const toGCalDate = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${toGCalDate(startTime)}/${toGCalDate(endTime)}`,
+    location,
+    details,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 async function loadTalks(): Promise<void> {
@@ -273,7 +327,15 @@ async function loadTalks(): Promise<void> {
             <div>${talk.track} | ${formatDateTime(talk.startTime)}</div>
             <div>${talk.room}</div>
             <p>${talk.abstract}</p>
-            <button data-talk-id="${talk.id}" class="save">Add to My Schedule</button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button data-talk-id="${talk.id}" class="save">Add to My Schedule</button>
+              <a
+                href="${buildGCalUrl(talk.title, talk.startTime, talk.endTime, talk.room, talk.abstract.slice(0, 200) + (talk.sourceUrl ? '\n' + talk.sourceUrl : ''))}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="gcal-link"
+              >Add to Google Calendar</a>
+            </div>
           </div>
         `
         )
@@ -344,12 +406,25 @@ async function loadSessions(): Promise<void> {
             <div>${session.room ?? "Room TBD"}</div>
             <div><a href="${session.url}" target="_blank" rel="noopener noreferrer">${session.sessionCode} ↗</a></div>
             <p>${session.talkTitles.length} talks in session</p>
-            <button
-              class="session-talks-toggle"
-              data-target-id="${detailsId}"
-              data-expanded="false"
-              type="button"
-            >Show talks</button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button
+                class="session-talks-toggle"
+                data-target-id="${detailsId}"
+                data-expanded="false"
+                type="button"
+              >Show talks</button>
+              <button
+                class="save-session"
+                type="button"
+                data-session-code="${session.sessionCode}"
+              >Add to My Schedule</button>
+              ${session.startTime && session.endTime ? `<a
+                href="${buildGCalUrl(session.title, session.startTime, session.endTime, session.room ?? '', session.talkTitles.length + ' talks\n' + session.url)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="gcal-link"
+              >Add to Google Calendar</a>` : ''}
+            </div>
             <div id="${detailsId}" class="session-talks hidden">
               <ul>${talksList}</ul>
             </div>
@@ -401,7 +476,7 @@ document.addEventListener("click", async (event) => {
     const response = await fetch(`${API_BASE}/schedule/${USER_ID}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ talkId })
+      body: JSON.stringify({ id: talkId, type: "talk" })
     });
     if (response.ok) {
       target.textContent = "Saved";
@@ -411,10 +486,27 @@ document.addEventListener("click", async (event) => {
     }
   }
 
+  if (target.classList.contains("save-session")) {
+    const sessionCode = target.getAttribute("data-session-code");
+    if (!sessionCode) return;
+    const response = await fetch(`${API_BASE}/schedule/${USER_ID}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: sessionCode, type: "session" })
+    });
+    if (response.ok) {
+      target.textContent = "Saved";
+      await loadSchedule();
+    } else {
+      console.warn("[save session] failed", response.status);
+    }
+  }
+
   if (target.classList.contains("remove-schedule")) {
-    const talkId = target.getAttribute("data-talk-id");
-    if (!talkId) return;
-    const response = await fetch(`${API_BASE}/schedule/${USER_ID}/${talkId}`, {
+    const itemId = target.getAttribute("data-item-id");
+    const itemType = target.getAttribute("data-item-type");
+    if (!itemId || !itemType) return;
+    const response = await fetch(`${API_BASE}/schedule/${USER_ID}?id=${encodeURIComponent(itemId)}&type=${encodeURIComponent(itemType)}`, {
       method: "DELETE"
     });
     if (!response.ok && response.status !== 404) {

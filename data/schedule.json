@@ -1,0 +1,16 @@
+{
+  "userSchedules": {
+    "internal-demo": [
+      {
+        "id": "APS-4639",
+        "type": "talk",
+        "addedAt": "2026-03-16T19:53:04.623Z"
+      },
+      {
+        "id": "APS-8785",
+        "type": "talk",
+        "addedAt": "2026-03-16T19:53:20.959Z"
+      }
+    ]
+  }
+}

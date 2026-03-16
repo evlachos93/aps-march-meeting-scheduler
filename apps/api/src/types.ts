@@ -12,7 +12,8 @@ export type Talk = {
 };
 
 export type ScheduleEntry = {
-  talkId: string;
+  id: string;
+  type: "talk" | "session";
   addedAt: string;
 };
 

@@ -231,32 +231,57 @@ app.get("/sessions", (req, res) => {
 app.get("/schedule/:userId", (req, res) => {
   const { userId } = req.params;
   const talksById = new Map(getTalks().map((talk) => [talk.id, talk]));
-  const talks = getUserSchedule(userId)
-    .map((entry) => talksById.get(entry.talkId))
+  const sessionsById = new Map(getSessions().map((session) => [session.sessionCode, session]));
+  const schedule = getUserSchedule(userId);
+
+  const talks = schedule
+    .filter((entry) => entry.type === "talk")
+    .map((entry) => talksById.get(entry.id))
     .filter((talk) => Boolean(talk));
 
-  res.json({ talks });
+  const sessions = schedule
+    .filter((entry) => entry.type === "session")
+    .map((entry) => sessionsById.get(entry.id))
+    .filter((session) => Boolean(session));
+
+  res.json({ talks, sessions });
 });
 
 app.post("/schedule/:userId", (req, res) => {
   const { userId } = req.params;
-  const talkId = String(req.body?.talkId ?? "").trim();
-  if (!talkId) {
-    return res.status(400).json({ error: "talkId is required" });
+  const id = String(req.body?.id ?? "").trim();
+  const type = String(req.body?.type ?? "").trim().toLowerCase() as "talk" | "session" | "";
+
+  if (!id || !type || !["talk", "session"].includes(type)) {
+    return res.status(400).json({ error: "id and type (talk|session) are required" });
   }
 
-  const talkExists = getTalks().some((talk) => talk.id === talkId);
-  if (!talkExists) {
-    return res.status(404).json({ error: "talk not found" });
+  if (type === "talk") {
+    const talkExists = getTalks().some((talk) => talk.id === id);
+    if (!talkExists) {
+      return res.status(404).json({ error: "talk not found" });
+    }
+  } else {
+    const sessionExists = getSessions().some((session) => session.sessionCode === id);
+    if (!sessionExists) {
+      return res.status(404).json({ error: "session not found" });
+    }
   }
 
-  const entry = addToSchedule(userId, talkId);
+  const entry = addToSchedule(userId, id, type as "talk" | "session");
   return res.status(201).json({ entry });
 });
 
-app.delete("/schedule/:userId/:talkId", (req, res) => {
-  const { userId, talkId } = req.params;
-  const removed = removeFromSchedule(userId, talkId);
+app.delete("/schedule/:userId", (req, res) => {
+  const { userId } = req.params;
+  const id = String(req.query.id ?? "").trim();
+  const type = String(req.query.type ?? "").trim().toLowerCase() as "talk" | "session" | "";
+
+  if (!id || !type || !["talk", "session"].includes(type)) {
+    return res.status(400).json({ error: "id and type (talk|session) query params required" });
+  }
+
+  const removed = removeFromSchedule(userId, id, type as "talk" | "session");
   if (!removed) {
     return res.status(404).json({ error: "schedule entry not found" });
   }
@@ -267,7 +292,8 @@ app.get("/schedule/:userId/export.ics", (req, res) => {
   const { userId } = req.params;
   const talksById = new Map(getTalks().map((talk) => [talk.id, talk]));
   const talks = getUserSchedule(userId)
-    .map((entry) => talksById.get(entry.talkId))
+    .filter((entry) => entry.type === "talk")
+    .map((entry) => talksById.get(entry.id))
     .filter((talk): talk is NonNullable<typeof talk> => Boolean(talk));
   const ics = buildIcs(userId, talks);
 
