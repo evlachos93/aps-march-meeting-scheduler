@@ -64,7 +64,7 @@ npm --workspace @aps/scraper run start
 To narrow down the talks data (e.g., for Quantum Computing), you can use the advanced filtering script:
 
 1. **Keyword-based Filtering (Talks and Sessions)**:
-   Removes talks or sessions from a specified JSON file if certain keywords appear in a selected field. This command **overwrites** the input file and is case-insensitive.
+   Removes talks or sessions from a specified JSON file if certain keywords appear in a selected field. This command **overwrites** the input file, so it's good to create a copy of your scraped data first, and is case-insensitive.
    
    ```bash
    npx ts-node apps/scraper/src/filterByKeywords.ts <filePath> <field> "keyword1, keyword2"
@@ -202,11 +202,7 @@ architectures: trapped ions, superconducting qubits, neutral atoms
 
 ## LLM filtering configuration
 
-There are two practical ways to use an LLM pass:
-
-### A) Automated API mode (fully scripted)
-
-Set these env vars in `.env`:
+If you want to use your favorite LLM to filter talks, then set these env vars in `.env`:
 
 - `SESSIONS_LLM_FILTER=1`
 - `SESSIONS_LLM_API_URL=<openai-compatible-chat-completions-endpoint>`
@@ -219,16 +215,6 @@ Important:
 - No default LLM endpoint/key is assumed.
 - Standard GitHub PATs from Developer Settings are not accepted by the Copilot chat-completions endpoint.
 
-### B) Copilot Chat mode (recommended for Copilot Business users)
-
-If automated API credentials are unavailable or rate-limited:
-
-1. Run `npm run generate:sessions` with LLM filter disabled or skipped.
-2. Open `data/sessions.json` in VS Code.
-3. Ask Copilot Chat to filter sessions in-chat by relevance to your quantum interests.
-4. Save the filtered output (for example by replacing `data/sessions.json` with the kept set).
-
-This is often the most convenient path for teams already using Copilot Business inside VS Code.
 
 ## Extra generators
 
