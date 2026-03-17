@@ -11,6 +11,7 @@
     "stop:api": "kill-port 8787",
     "dev:web": "npm --workspace @aps/web run dev",
     "dev:scraper": "npm --workspace @aps/scraper run dev",
+    "normalize:talk-weekdays": "node scripts/set-talk-weekdays.js",
     "generate:schedule": "npm --workspace @aps/scraper run build && npm --workspace @aps/scraper run schedule",
     "generate:sessions": "npm --workspace @aps/scraper run build && npm --workspace @aps/scraper run sessions",
     "generate:sessions-table": "npm --workspace @aps/scraper run build && npm --workspace @aps/scraper run sessions:table"

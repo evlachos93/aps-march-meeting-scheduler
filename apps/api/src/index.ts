@@ -68,6 +68,14 @@ function getSessionWeekday(session: Session): number {
   return getWeekdayFromLabel(session.weekday);
 }
 
+function getTalkWeekday(talk: Talk): number {
+  const fromLabel = getWeekdayFromLabel(talk.weekday);
+  if (fromLabel !== 7) {
+    return fromLabel;
+  }
+  return getWeekdayFromTimestamp(talk.startTime);
+}
+
 const MINUTES_PER_DAY = 24 * 60;
 const TIME_SLOT_RANGES: Record<string, { start: number; end: number }> = {
   morning: { start: 8 * 60, end: 11 * 60 },
@@ -340,14 +348,14 @@ app.get("/talks", (req, res) => {
       talk.title.toLowerCase().includes(topic) ||
       talk.abstract.toLowerCase().includes(topic);
     const matchesTrack = !track || talk.track.toLowerCase() === track;
-    const matchesDay = dayFilter === null || getWeekdayFromTimestamp(talk.startTime) === dayFilter;
+    const matchesDay = dayFilter === null || getTalkWeekday(talk) === dayFilter;
     const matchesTimeSlot = isInTimeSlot(talk.startTime, talk.endTime, timeSlot);
     return matchesQuery && matchesTopic && matchesTrack && matchesDay && matchesTimeSlot;
   });
 
   const sorted = [...filtered].sort((a, b) => {
     // Always sort chronologically by start time, then by day
-    const weekdayDiff = getWeekdayFromTimestamp(a.startTime) - getWeekdayFromTimestamp(b.startTime);
+    const weekdayDiff = getTalkWeekday(a) - getTalkWeekday(b);
     if (weekdayDiff !== 0) {
       return weekdayDiff;
     }
