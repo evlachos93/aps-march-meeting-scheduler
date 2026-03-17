@@ -68,10 +68,10 @@ app.innerHTML = `
     <main class="content-column">
       <h1>APS Internal Scheduler</h1>
       <div class="panel row">
-        <select id="view">
-          <option value="talks">Talks</option>
-          <option value="sessions">Sessions</option>
-        </select>
+        <div class="view-toggle" role="group" aria-label="View selector">
+          <button type="button" class="view-button active" data-view="talks">Talks</button>
+          <button type="button" class="view-button" data-view="sessions">Sessions</button>
+        </div>
         <input id="query" placeholder="Search talks" />
         <div class="time-filter-group">
           <label>
@@ -87,9 +87,25 @@ app.innerHTML = `
             <input type="radio" name="timeSlot" value="lateafternoon" /> 2pm-midnight
           </label>
         </div>
-        <select id="topic">
-          <option value="">All topics</option>
-        </select>
+        <div class="topic-dropdown" id="topic-filter">
+          <button
+            type="button"
+            id="topic-toggle"
+            class="topic-toggle-button"
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            <span id="topic-toggle-label">Topics: All</span>
+            <span aria-hidden="true" class="topic-toggle-icon">▾</span>
+          </button>
+          <div id="topic-panel" class="topic-dropdown-panel hidden">
+            <div class="topic-dropdown-header">
+              <span>Topics</span>
+              <button type="button" id="topic-clear" class="topic-clear">Clear</button>
+            </div>
+            <div id="topic-options" class="topic-options"></div>
+          </div>
+        </div>
         <select id="day">
           <option value="">All days</option>
           <option value="sunday">Sunday</option>
@@ -147,15 +163,34 @@ if (!talksContainer || !statsContainer || !scheduleContainer || !scheduleCount) 
   throw new Error("App layout rendered without required sections");
 }
 
-const viewSelect = document.querySelector<HTMLSelectElement>("#view")!;
+const viewButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".view-button"));
 const queryInput = document.querySelector<HTMLInputElement>("#query")!;
-const topicSelect = document.querySelector<HTMLSelectElement>("#topic")!;
+const topicFilterContainer = document.querySelector<HTMLDivElement>("#topic-filter")!;
+const topicToggleButton = document.querySelector<HTMLButtonElement>("#topic-toggle")!;
+const topicToggleLabel = document.querySelector<HTMLSpanElement>("#topic-toggle-label")!;
+const topicPanel = document.querySelector<HTMLDivElement>("#topic-panel")!;
+const topicOptions = document.querySelector<HTMLDivElement>("#topic-options")!;
+const topicClearButton = document.querySelector<HTMLButtonElement>("#topic-clear")!;
 const daySelect = document.querySelector<HTMLSelectElement>("#day")!;
 const trackSelect = document.querySelector<HTMLSelectElement>("#track")!;
 const sessionTypeSelect = document.querySelector<HTMLSelectElement>("#sessionType")!;
-const timeSlotRadios = document.querySelectorAll<HTMLInputElement>('input[name="timeSlot"]');
+const timeSlotRadios = document.querySelectorAll<HTMLInputElement>("input[name=\"timeSlot\"]");
+const topicLabels = new Map<string, string>();
+let currentView: 'talks' | 'sessions' = 'talks';
 
-if (!viewSelect || !queryInput || !topicSelect || !daySelect || !trackSelect || !sessionTypeSelect) {
+if (
+  !viewButtons.length ||
+  !queryInput ||
+  !topicFilterContainer ||
+  !topicToggleButton ||
+  !topicToggleLabel ||
+  !topicPanel ||
+  !topicOptions ||
+  !topicClearButton ||
+  !daySelect ||
+  !trackSelect ||
+  !sessionTypeSelect
+) {
   throw new Error("Missing UI controls");
 }
 
@@ -167,7 +202,7 @@ function formatDateTime(value: string | undefined): string {
 }
 
 function getSelectedTimeSlot(): string {
-  const checked = document.querySelector<HTMLInputElement>('input[name="timeSlot"]:checked');
+  const checked = document.querySelector<HTMLInputElement>("input[name=\"timeSlot\"]:checked");
   return checked?.value ?? "all";
 }
 
@@ -191,6 +226,62 @@ function formatDate(dateStr: string): string {
     day: "numeric",
     timeZone: "UTC"
   });
+}
+
+function getSelectedTopics(): string[] {
+  return Array.from(topicOptions.querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked")).map((input) => input.value);
+}
+
+function updateTopicButtonLabel(): void {
+  const selected = getSelectedTopics();
+  if (!selected.length) {
+    topicToggleLabel.textContent = "Topics: All";
+  } else if (selected.length === 1) {
+    const label = topicLabels.get(selected[0]) ?? selected[0];
+    topicToggleLabel.textContent = `Topics: ${label}`;
+  } else {
+    topicToggleLabel.textContent = `Topics (${selected.length})`;
+  }
+}
+
+function openTopicPanel(): void {
+  topicPanel.classList.remove("hidden");
+  topicToggleButton.setAttribute("aria-expanded", "true");
+}
+
+function closeTopicPanel(): void {
+  topicPanel.classList.add("hidden");
+  topicToggleButton.setAttribute("aria-expanded", "false");
+}
+
+function toggleTopicPanel(): void {
+  if (topicPanel.classList.contains("hidden")) {
+    openTopicPanel();
+  } else {
+    closeTopicPanel();
+  }
+}
+
+function clearTopicSelection(): void {
+  topicOptions.querySelectorAll<HTMLInputElement>("input[type=checkbox]").forEach((input) => {
+    input.checked = false;
+  });
+  updateTopicButtonLabel();
+}
+
+function setView(view: "talks" | "sessions"): void {
+  currentView = view;
+  viewButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.view === view);
+  });
+  const showingTalks = view === "talks";
+  topicFilterContainer.classList.toggle("hidden", !showingTalks);
+  if (!showingTalks) {
+    closeTopicPanel();
+  }
+  trackSelect.style.display = showingTalks ? "" : "none";
+  sessionTypeSelect.style.display = showingTalks ? "none" : "";
+  queryInput.placeholder = showingTalks ? "Search talks" : "Search sessions";
 }
 
 async function loadSchedule(): Promise<void> {
@@ -335,13 +426,13 @@ function buildGCalUrl(title: string, startTime: string, endTime: string, locatio
 
 async function loadTalks(): Promise<void> {
   const query = queryInput.value.trim();
-  const topic = topicSelect.value.trim();
   const day = daySelect.value.trim();
   const track = trackSelect.value.trim();
   const timeSlot = getSelectedTimeSlot();
   const params = new URLSearchParams();
   if (query) params.set("q", query);
-  if (topic) params.set("topic", topic);
+  const selectedTopics = getSelectedTopics();
+  if (selectedTopics.length) params.set("topics", selectedTopics.join(","));
   if (day) params.set("day", day);
   if (track) params.set("track", track);
   if (timeSlot !== "all") params.set("timeSlot", timeSlot);
@@ -499,8 +590,7 @@ async function loadSessions(): Promise<void> {
 }
 
 async function loadCurrentView(): Promise<void> {
-  const view = viewSelect.value === "sessions" ? "sessions" : "talks";
-  if (view === "sessions") {
+  if (currentView === "sessions") {
     await loadSessions();
     return;
   }
@@ -675,6 +765,9 @@ summaryGenerateButton.addEventListener("click", async () => {
 
 document.addEventListener("click", async (event) => {
   const target = event.target as HTMLElement;
+  if (!topicPanel.classList.contains("hidden") && !topicFilterContainer.contains(target)) {
+    closeTopicPanel();
+  }
   if (target.id === "summary-hide") {
     const collapsible = document.getElementById("summary-collapsible");
     if (!collapsible) return;
@@ -792,22 +885,32 @@ loadSchedule().catch((err) => {
   console.warn("[init] Could not load schedule", err);
 });
 
-viewSelect.addEventListener("change", async () => {
-  const view = viewSelect.value === "sessions" ? "sessions" : "talks";
-  // Update visibility of topic/track/sessionType selects based on view
-  if (view === "talks") {
-    topicSelect.style.display = "";
-    trackSelect.style.display = "";
-    sessionTypeSelect.style.display = "none";
-    queryInput.placeholder = "Search talks";
-  } else {
-    topicSelect.style.display = "none";
-    trackSelect.style.display = "none";
-    sessionTypeSelect.style.display = "";
-    queryInput.placeholder = "Search sessions";
-  }
-  await loadCurrentView();
+viewButtons.forEach((button) => {
+  button.addEventListener("click", async () => {
+    const view = button.dataset.view === "sessions" ? "sessions" : "talks";
+    if (view === currentView) {
+      return;
+    }
+    setView(view);
+    await loadCurrentView();
+  });
 });
+
+topicToggleButton.addEventListener("click", (event) => {
+  event.stopPropagation();
+  toggleTopicPanel();
+});
+
+topicClearButton.addEventListener("click", (event) => {
+  event.stopPropagation();
+  clearTopicSelection();
+});
+
+topicOptions.addEventListener("change", () => {
+  updateTopicButtonLabel();
+});
+
+setView("talks");
 
 // Add event listener for time slot changes
 timeSlotRadios.forEach((radio) => {
@@ -820,25 +923,30 @@ async function initTopics(): Promise<void> {
   try {
     const response = await fetch(`${API_BASE}/topics`);
     const payload = (await response.json()) as { topics: { label: string; value: string }[] };
+    const topics = Array.isArray(payload.topics) ? payload.topics : [];
+    topicOptions.innerHTML = "";
+    topicLabels.clear();
     const fragment = document.createDocumentFragment();
-    for (const t of payload.topics) {
-      const opt = document.createElement("option");
-      opt.value = t.value;
-      opt.textContent = t.label;
-      fragment.appendChild(opt);
-    }
-    topicSelect.appendChild(fragment);
-    console.log(`[initTopics] Loaded ${payload.topics.length} topics from API`);
+    topics.forEach((topic, index) => {
+      topicLabels.set(topic.value, topic.label);
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = topic.value;
+      checkbox.id = `topic-option-${index}`;
+      const label = document.createElement("label");
+      label.className = "topic-option";
+      const labelText = document.createElement("span");
+      labelText.textContent = topic.label;
+      label.append(checkbox, labelText);
+      fragment.appendChild(label);
+    });
+    topicOptions.appendChild(fragment);
+    updateTopicButtonLabel();
+    console.log(`[initTopics] Loaded ${topics.length} topics from API`);
   } catch (err) {
     console.warn("[initTopics] Failed to load topics from API, dropdown will be empty", err);
   }
 }
-
-// Initialize with talks view settings
-topicSelect.style.display = "";
-trackSelect.style.display = "";
-sessionTypeSelect.style.display = "none";
-queryInput.placeholder = "Search talks";
 
 initSummaryPanel();
 loadNotes().then(() => initTopics()).then(() => loadCurrentView());

@@ -116,6 +116,122 @@ select {
   padding: 0;
 }
 
+.view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.view-button {
+  border: none;
+  background: transparent;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #314055;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.view-button:hover:not(.active) {
+  background: rgba(29, 79, 122, 0.08);
+}
+
+.view-button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.topic-dropdown {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.topic-toggle-button {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.topic-toggle-button:focus-visible {
+  outline: 2px solid rgba(29, 79, 122, 0.7);
+  outline-offset: 2px;
+}
+
+.topic-toggle-icon {
+  font-size: 0.85rem;
+}
+
+.topic-dropdown-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 10px;
+  min-width: 220px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 20px 40px rgba(19, 32, 43, 0.18);
+  z-index: 5;
+}
+
+.topic-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: #4a5c6b;
+}
+
+.topic-clear {
+  border: none;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0;
+}
+
+.topic-clear:hover {
+  text-decoration: underline;
+}
+
+.topic-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.topic-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  color: #304252;
+}
+
+.topic-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
 .day-section {
   margin-bottom: 24px;
 }

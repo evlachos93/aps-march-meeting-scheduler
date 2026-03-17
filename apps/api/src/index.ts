@@ -330,11 +330,20 @@ app.post("/summaries", async (req, res) => {
 app.get("/talks", (req, res) => {
   const q = String(req.query.q ?? "").trim().toLowerCase();
   const topic = String(req.query.topic ?? "").trim().toLowerCase();
+  const topicsParam = String(req.query.topics ?? "").trim().toLowerCase();
   const track = String(req.query.track ?? "").trim().toLowerCase();
   const timeSlot = String(req.query.timeSlot ?? "all").trim().toLowerCase();
   const dayFilter = parseDay(String(req.query.day ?? ""));
 
-  console.log(`[API /talks] Filtering by q="${q}", topic="${topic}", track="${track}", timeSlot="${timeSlot}", day="${req.query.day ?? ""}"`);
+  const topicFilters = topicsParam
+    ? topicsParam
+        .split(",")
+        .map((value) => value.trim())
+        .filter((value) => Boolean(value))
+    : topic
+    ? [topic]
+    : [];
+  console.log(`[API /talks] Filtering by q="${q}", topics="${topicFilters.join(",")}", track="${track}", timeSlot="${timeSlot}", day="${req.query.day ?? ""}"`);
 
   const filtered = getTalks().filter((talk) => {
     const matchesQuery =
@@ -343,10 +352,12 @@ app.get("/talks", (req, res) => {
       talk.abstract.toLowerCase().includes(q) ||
       talk.speakers.some((s) => s.toLowerCase().includes(q));
     const matchesTopic =
-      !topic ||
-      talk.topics.some((t) => t.toLowerCase() === topic) ||
-      talk.title.toLowerCase().includes(topic) ||
-      talk.abstract.toLowerCase().includes(topic);
+      !topicFilters.length ||
+      topicFilters.some((topicFilter) =>
+        talk.topics.some((t) => t.toLowerCase() === topicFilter) ||
+        talk.title.toLowerCase().includes(topicFilter) ||
+        talk.abstract.toLowerCase().includes(topicFilter)
+      );
     const matchesTrack = !track || talk.track.toLowerCase() === track;
     const matchesDay = dayFilter === null || getTalkWeekday(talk) === dayFilter;
     const matchesTimeSlot = isInTimeSlot(talk.startTime, talk.endTime, timeSlot);
