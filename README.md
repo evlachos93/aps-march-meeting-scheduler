@@ -10,26 +10,56 @@ Lightweight tool for planning APS March Meeting 2026 attendance.
 
 ## Quick start
 
-1.First, you have to setup `npm`. [Instructions](https://www.freecodecamp.org/news/how-to-install-node-js-and-npm-on-windows-2/) for installing on Windows. Then,  install dependencies with `npm`:
+1. First, you have to setup `npm`. [Instructions](https://www.freecodecamp.org/news/how-to-install-node-js-and-npm-on-windows-2/) for installing on Windows. Then,  install dependencies with `npm`:
 
 ```bash
 npm install
 ```
 
-2. (Optional) Generate your own talk/session data with the scraper.
+2. Start the API server:
+
+```bash
+npm run dev:api
+```
+
+3. Start the web app:
+
+```bash
+npm run dev:web
+```
+
+4. Open the web app URL shown by Vite (usually `http://localhost:5173`).
+
+The web app reads data from the API, and the API serves local data files from `data/`.
+If your generated file names are the defaults above, they are ready to use with no extra step.
+
+## Using the web app
+
+1. Use the **Talks** / **Sessions** toggle to switch views.
+2. Use the search box and filters to narrow results:
+   - **Topic** — populated from `data/ui-topics.json` (edit that file to customise the list)
+   - **Track** — `Invited`, `Focus`, `Oral`, `Poster` (talks view only)
+   - **Session type** — same values (sessions view only)
+    - **Day** — show only events taking place on a given weekday (All days by default)
+3. Click **Find** to run the search. A result count is shown below the filters.
+4. Talk titles link directly to the APS talk page. Session codes link to the APS session page.
+5. Click **Add to My Schedule** on talks you want to keep.
+6. Click **Export .ics** to download a calendar file for your saved talks.
+
+## Extracting session/talk information 
+
+Here is a step-by-step guide on how to build your own database of talks.
+
+1. Generate your own talk/session data with the scraper.
 
 Interesting talks/sessions already extracted and found in `data`. If
 you want to run your own scraper, then adjust your preferences in
 `data/session-preferences.txt` first and then run:
 
-### Scrape talks
-
 ```bash
 npm --workspace @aps/scraper run build
 npm --workspace @aps/scraper run start
 ```
-
-### Filter talks
 
 To narrow down the talks data (e.g., for Quantum Computing), you can use the advanced filtering script:
 
@@ -70,23 +100,6 @@ Generated files are written to:
     to customize list of talks/sessions. For example, you can choose
     to include only talks related to quantum error correction.
 
-4. Start the API server:
-
-```bash
-npm run dev:api
-```
-
-5. Start the web app:
-
-```bash
-npm run dev:web
-```
-
-6. Open the web app URL shown by Vite (usually `http://localhost:5173`).
-
-The web app reads data from the API, and the API serves local data files from `data/`.
-If your generated file names are the defaults above, they are ready to use with no extra step.
-
 ## How data flows into the web app
 
 1. `apps/scraper` fetches APS content and writes JSON files under `data/`.
@@ -94,19 +107,6 @@ If your generated file names are the defaults above, they are ready to use with 
 3. `apps/web` calls the API and lets you search, filter, and add talks to your schedule.
 
 In short: run scraper -> start API -> open web app.
-
-## Using the web app
-
-1. Use the **Talks** / **Sessions** toggle to switch views.
-2. Use the search box and filters to narrow results:
-   - **Topic** — populated from `data/ui-topics.json` (edit that file to customise the list)
-   - **Track** — `Invited`, `Focus`, `Oral`, `Poster` (talks view only)
-   - **Session type** — same values (sessions view only)
-    - **Day** — show only events taking place on a given weekday (All days by default)
-3. Click **Find** to run the search. A result count is shown below the filters.
-4. Talk titles link directly to the APS talk page. Session codes link to the APS session page.
-5. Click **Add to My Schedule** on talks you want to keep.
-6. Click **Export .ics** to download a calendar file for your saved talks.
 
 ## Common commands
 
