@@ -436,6 +436,22 @@ select {
   gap: 4px;
 }
 
+.note-preview-toggle {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.note-preview-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .note-markdown-preview {
   border: 1px solid var(--line);
   border-radius: 10px;

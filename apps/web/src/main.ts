@@ -570,7 +570,8 @@ async function loadTalks(): Promise<void> {
             <div class="note-area${hasNote ? "" : " hidden"}">
               <textarea class="note-textarea" data-talk-id="${talk.id}" placeholder="Your private note…" rows="3">${escapeHtml(existingNote)}</textarea>
               <span class="note-save-state"></span>
-              <div class="note-markdown-preview" data-note-preview="${talk.id}">${renderMarkdownPreview(existingNote)}</div>
+              <button type="button" class="note-preview-toggle" data-preview-target="${talk.id}" aria-expanded="false">Show Markdown preview</button>
+              <div class="note-markdown-preview hidden" data-note-preview="${talk.id}">${renderMarkdownPreview(existingNote)}</div>
             </div>
           </div>
         `;
@@ -916,6 +917,16 @@ document.addEventListener("click", async (event) => {
       console.warn("[remove schedule] failed", response.status);
     }
     await loadSchedule();
+  }
+
+  if (target.classList.contains("note-preview-toggle")) {
+    const targetId = target.getAttribute("data-preview-target");
+    if (!targetId) return;
+    const preview = document.querySelector<HTMLDivElement>(`.note-markdown-preview[data-note-preview="${targetId}"]`);
+    if (!preview) return;
+    const nowHidden = preview.classList.toggle("hidden");
+    target.setAttribute("aria-expanded", nowHidden ? "false" : "true");
+    target.textContent = nowHidden ? "Show Markdown preview" : "Hide Markdown preview";
   }
 
   if (target.classList.contains("session-talks-toggle")) {
