@@ -1,4 +1,6 @@
 import "./styles.css";
+import DOMPurify from "dompurify";
+import { marked } from "marked";
 
 type Talk = {
   id: string;
@@ -143,6 +145,22 @@ app.innerHTML = `
         </div>
         <span id="schedule-count">0 talks</span>
       </div>
+      <div class="schedule-filters">
+        <select id="schedule-day">
+          <option value="">All days</option>
+          <option value="sunday">Sunday</option>
+          <option value="monday">Monday</option>
+          <option value="tuesday">Tuesday</option>
+          <option value="wednesday">Wednesday</option>
+          <option value="thursday">Thursday</option>
+          <option value="friday">Friday</option>
+          <option value="saturday">Saturday</option>
+        </select>
+        <div class="schedule-type-toggle" role="group" aria-label="Schedule type filter">
+          <button type="button" class="schedule-type-button active" data-type="talk">Talks</button>
+          <button type="button" class="schedule-type-button active" data-type="session">Sessions</button>
+        </div>
+      </div>
       <div id="schedule-list" class="schedule-list"></div>
       <button id="export" class="schedule-export">Export .ics</button>
     </aside>
@@ -159,7 +177,17 @@ const summaryCardMessage = document.querySelector<HTMLParagraphElement>("#summar
 const summaryResult = document.querySelector<HTMLDivElement>("#summary-result")!;
 const scheduleContainer = document.querySelector<HTMLDivElement>("#schedule-list")!;
 const scheduleCount = document.querySelector<HTMLSpanElement>("#schedule-count")!;
-if (!talksContainer || !statsContainer || !scheduleContainer || !scheduleCount) {
+const scheduleDaySelect = document.querySelector<HTMLSelectElement>("#schedule-day")!;
+const scheduleTypeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".schedule-type-button"));
+const scheduleTypeState: Record<"talk" | "session", boolean> = { talk: true, session: true };
+if (
+  !talksContainer ||
+  !statsContainer ||
+  !scheduleContainer ||
+  !scheduleCount ||
+  !scheduleDaySelect ||
+  !scheduleTypeButtons.length
+) {
   throw new Error("App layout rendered without required sections");
 }
 
@@ -228,6 +256,56 @@ function formatDate(dateStr: string): string {
   });
 }
 
+const WEEKDAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+function normalizeWeekdayLabel(value?: string): string | null {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  if (WEEKDAY_NAMES.includes(normalized)) {
+    return normalized;
+  }
+  const prefix = normalized.slice(0, 3);
+  return WEEKDAY_NAMES.find((name) => name.startsWith(prefix)) ?? null;
+}
+
+function getWeekdayLabelFromTimestamp(value?: string): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return null;
+  return WEEKDAY_NAMES[date.getUTCDay()];
+}
+
+function getTalkWeekdayLabel(talk: Talk): string | null {
+  return normalizeWeekdayLabel(talk.weekday) ?? getWeekdayLabelFromTimestamp(talk.startTime);
+}
+
+function getSessionWeekdayLabel(session: Session): string | null {
+  return normalizeWeekdayLabel(session.weekday) ?? getWeekdayLabelFromTimestamp(session.startTime);
+}
+
+function matchesScheduleDay(filter: string, itemWeekday: string | null): boolean {
+  if (!filter) return true;
+  return Boolean(itemWeekday && itemWeekday === filter);
+}
+
+function renderMarkdownPreview(content: string): string {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return "<p class=\"note-preview-empty\">Preview your note as Markdown once you start typing.</p>";
+  }
+  const html = marked.parse(trimmed, { gfm: true, breaks: true });
+  return DOMPurify.sanitize(html);
+}
+
+function updateNotePreview(talkId: string, content: string): void {
+  const preview = document.querySelector<HTMLDivElement>(`.note-markdown-preview[data-note-preview=\"${talkId}\"]`);
+  if (!preview) {
+    return;
+  }
+  preview.innerHTML = renderMarkdownPreview(content);
+}
+
 function getSelectedTopics(): string[] {
   return Array.from(topicOptions.querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked")).map((input) => input.value);
 }
@@ -294,20 +372,31 @@ async function loadSchedule(): Promise<void> {
     const payload = (await response.json()) as { talks?: Talk[]; sessions?: Session[] };
     const savedTalks = Array.isArray(payload.talks) ? payload.talks : [];
     const savedSessions = Array.isArray(payload.sessions) ? payload.sessions : [];
-    const totalItems = savedTalks.length + savedSessions.length;
+    const hasSavedItems = savedTalks.length + savedSessions.length > 0;
+    const dayFilterValue = scheduleDaySelect.value;
+    const filteredTalks = scheduleTypeState.talk
+      ? savedTalks.filter((talk) => matchesScheduleDay(dayFilterValue, getTalkWeekdayLabel(talk)))
+      : [];
+    const filteredSessions = scheduleTypeState.session
+      ? savedSessions.filter((session) => matchesScheduleDay(dayFilterValue, getSessionWeekdayLabel(session)))
+      : [];
+    const displayedCount = filteredTalks.length + filteredSessions.length;
 
-    scheduleCount.textContent = `${totalItems} item${totalItems === 1 ? "" : "s"}`;
+    scheduleCount.textContent = `${displayedCount} item${displayedCount === 1 ? "" : "s"}`;
 
-    if (!totalItems) {
+    if (!displayedCount) {
+      const message = hasSavedItems
+        ? "No talks or sessions match the filters."
+        : "No talks or sessions saved yet. Use the buttons on the left to build your agenda.";
       scheduleContainer.innerHTML = `
         <div class="schedule-empty">
-          No talks or sessions saved yet. Use the buttons on the left to build your agenda.
+          ${message}
         </div>
       `;
       return;
     }
 
-    const talkItems = savedTalks
+    const talkItems = filteredTalks
       .map(
         (talk) => `
           <article class="schedule-item schedule-item-talk">
@@ -337,7 +426,7 @@ async function loadSchedule(): Promise<void> {
       )
       .join("\n");
 
-    const sessionItems = savedSessions
+    const sessionItems = filteredSessions
       .map(
         (session) => `
           <article class="schedule-item schedule-item-session">
@@ -481,6 +570,7 @@ async function loadTalks(): Promise<void> {
             <div class="note-area${hasNote ? "" : " hidden"}">
               <textarea class="note-textarea" data-talk-id="${talk.id}" placeholder="Your private note…" rows="3">${escapeHtml(existingNote)}</textarea>
               <span class="note-save-state"></span>
+              <div class="note-markdown-preview" data-note-preview="${talk.id}">${renderMarkdownPreview(existingNote)}</div>
             </div>
           </div>
         `;
@@ -854,6 +944,15 @@ document.addEventListener("click", async (event) => {
   }
 });
 
+document.addEventListener("input", (event) => {
+  const target = event.target as HTMLElement;
+  if (!target.classList.contains("note-textarea")) return;
+  const talkId = target.getAttribute("data-talk-id");
+  if (!talkId) return;
+  const textarea = target as HTMLTextAreaElement;
+  updateNotePreview(talkId, textarea.value);
+});
+
 document.addEventListener("focusout", async (event) => {
   const target = event.target as HTMLElement;
   if (!target.classList.contains("note-textarea")) return;
@@ -871,6 +970,7 @@ document.addEventListener("focusout", async (event) => {
       saveState.textContent = "Saved";
       setTimeout(() => { saveState.textContent = ""; }, 2000);
     }
+    updateNotePreview(talkId, content);
     if (toggleBtn) {
       toggleBtn.textContent = content.trim() ? "\uD83D\uDCDD Edit note" : "\uD83D\uDCDD Add note";
     }
@@ -908,6 +1008,22 @@ topicClearButton.addEventListener("click", (event) => {
 
 topicOptions.addEventListener("change", () => {
   updateTopicButtonLabel();
+});
+
+scheduleDaySelect.addEventListener("change", () => {
+  loadSchedule();
+});
+
+scheduleTypeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const type = button.dataset.type as "talk" | "session" | undefined;
+    if (!type) {
+      return;
+    }
+    scheduleTypeState[type] = !scheduleTypeState[type];
+    button.classList.toggle("active", scheduleTypeState[type]);
+    loadSchedule();
+  });
 });
 
 setView("talks");

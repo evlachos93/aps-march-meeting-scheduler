@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "build": "npm run -ws build",
+    "app": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
     "dev:api": "npm --workspace @aps/api run dev",
     "stop:api": "kill-port 8787",
     "dev:web": "npm --workspace @aps/web run dev",
@@ -17,6 +18,7 @@
     "generate:sessions-table": "npm --workspace @aps/scraper run build && npm --workspace @aps/scraper run sessions:table"
   },
   "devDependencies": {
+    "concurrently": "^8.2.0",
     "kill-port": "^2.0.1"
   }
 }

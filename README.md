@@ -10,25 +10,23 @@ Lightweight tool for planning APS March Meeting 2026 attendance.
 
 ## Quick start
 
-1. First, you have to setup `npm`. [Instructions](https://www.freecodecamp.org/news/how-to-install-node-js-and-npm-on-windows-2/) for installing on Windows. Then,  install dependencies with `npm`:
+1. First, you have to setup `npm`. Installation instructions for [Windows](https://www.freecodecamp.org/news/how-to-install-node-js-and-npm-on-windows-2/)/[Mac](https://medium.com/@hayasnc/how-to-install-nodejs-and-npm-on-mac-using-homebrew-b33780287d8f). Then, install dependencies with `npm`:
 
 ```bash
 npm install
 ```
 
-2. Start the API server:
+2. Start the API server and the web UI together:
 
 ```bash
-npm run dev:api
+npm run app
 ```
 
-3. Start the web app:
+     - This runs both `npm run dev:api` and `npm run dev:web` via `concurrently`.
+     - Run either sub-command directly if you only need one process:
+         `npm run dev:api` or `npm run dev:web`.
 
-```bash
-npm run dev:web
-```
-
-4. Open the web app URL shown by Vite (usually `http://localhost:5173`).
+3. Open the web app URL shown by Vite (usually `http://localhost:5173`).
 
 The web app reads data from the API, and the API serves local data files from `data/`.
 If your generated file names are the defaults above, they are ready to use with no extra step.
