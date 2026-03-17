@@ -5,7 +5,7 @@ import talksJson from "../../../data/talks.json" with { type: "json" };
 import sessionsJson from "../../../data/sessions.json" with { type: "json" };
 import uiTopicsJson from "../../../data/ui-topics.json" with { type: "json" };
 import dailySummariesJson from "../../../data/daily-summaries.json" with { type: "json" };
-import type { DailySummary, DailySummariesPayload, ScheduleEntry, Session, SessionsPayload, Talk } from "./types.js";
+import type { DailySummary, DailySummariesPayload, ScheduleEntry, Session, SessionsPayload, Talk, TalkNote } from "./types.js";
 
 type TalksPayload = {
   talks: Talk[];
@@ -163,5 +163,61 @@ export function removeFromSchedule(userId: string, id: string, type: "talk" | "s
   if (removed) {
     saveScheduleFile(scheduleByUser);
   }
+  return removed;
+}
+
+// Persistent notes storage
+const notesFilePath = resolve(__dirname, "../../../data/notes.json");
+
+type NotesPayload = {
+  userNotes: Record<string, Record<string, TalkNote>>;
+};
+
+function loadNotesFile(): Map<string, Map<string, TalkNote>> {
+  try {
+    const content = readFileSync(notesFilePath, "utf-8");
+    const payload: NotesPayload = JSON.parse(content);
+    const result = new Map<string, Map<string, TalkNote>>();
+    for (const [userId, notes] of Object.entries(payload.userNotes ?? {})) {
+      const userMap = new Map<string, TalkNote>();
+      for (const [talkId, note] of Object.entries(notes)) {
+        userMap.set(talkId, note);
+      }
+      result.set(userId, userMap);
+    }
+    return result;
+  } catch {
+    return new Map<string, Map<string, TalkNote>>();
+  }
+}
+
+function saveNotesFile(notesByUser: Map<string, Map<string, TalkNote>>): void {
+  const userNotes: Record<string, Record<string, TalkNote>> = {};
+  for (const [userId, userMap] of notesByUser.entries()) {
+    userNotes[userId] = Object.fromEntries(userMap.entries());
+  }
+  writeFileSync(notesFilePath, JSON.stringify({ userNotes }, null, 2), "utf-8");
+}
+
+const notesByUser = loadNotesFile();
+
+export function getUserNotes(userId: string): Record<string, TalkNote> {
+  return Object.fromEntries(notesByUser.get(userId)?.entries() ?? []);
+}
+
+export function setNote(userId: string, talkId: string, content: string): TalkNote {
+  const userMap = notesByUser.get(userId) ?? new Map<string, TalkNote>();
+  const note: TalkNote = { content, updatedAt: new Date().toISOString() };
+  userMap.set(talkId, note);
+  notesByUser.set(userId, userMap);
+  saveNotesFile(notesByUser);
+  return note;
+}
+
+export function deleteNote(userId: string, talkId: string): boolean {
+  const userMap = notesByUser.get(userId);
+  if (!userMap) return false;
+  const removed = userMap.delete(talkId);
+  if (removed) saveNotesFile(notesByUser);
   return removed;
 }

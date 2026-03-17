@@ -1,7 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { buildIcs } from "./ics.js";
-import { addToSchedule, getDailySummary, getSessions, getTalks, getUiTopics, getUserSchedule, removeFromSchedule } from "./store.js";
+import { addToSchedule, deleteNote, getDailySummary, getSessions, getTalks, getUiTopics, getUserNotes, getUserSchedule, removeFromSchedule, setNote } from "./store.js";
 import type { AiSummary, AiSummaryHighlight, AiSummaryTopic, Session, Talk } from "./types.js";
 
 const app = express();
@@ -144,13 +144,13 @@ function formatTime(timestamp?: string): string {
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
-function buildTalkContext(talks: Talk[]): string {
-  const items = talks.map((talk) => ({
-    id: talk.id,
-    time: `${formatTime(talk.startTime)}–${formatTime(talk.endTime)}`,
-    title: talk.title,
-    track: talk.track,
-    topics: talk.topics.length ? talk.topics : ["general"]
+function buildSessionContext(sessions: Session[]): string {
+  const items = sessions.map((session) => ({
+    code: session.sessionCode,
+    title: session.title,
+    type: session.sessionType,
+    time: session.timeRange,
+    talks: session.talkTitles
   }));
   return JSON.stringify(items);
 }
@@ -215,13 +215,13 @@ function parseAiSummaryPayload(content: string, weekday: string): AiSummary {
   };
 }
 
-async function generateAiSummary(weekday: string, talks: Talk[]): Promise<AiSummary> {
+async function generateAiSummary(weekday: string, sessions: Session[]): Promise<AiSummary> {
   if (!LLM_API_URL || !LLM_API_KEY) {
     throw new Error("LLM configuration missing");
   }
 
-  const talkContext = buildTalkContext(talks);
-  const userPrompt = `Summarize the APS March Meeting talks for ${weekday}. The input is a JSON array of talks, each with id, time (HH:MM–HH:MM), title, track, and topics. Group the output topics by time of day (morning, afternoon, late afternoon). Write a single plain sentence for the overview. For each topic group, state the subject matter in one sentence. Use only what is in the data. Input: ${talkContext}\nReturn only valid JSON: {"overview": "...", "topics": [{"name": "...", "detail": "..."}, ...], "highlights": [{"title": "...", "talkId": "...", "reason": "..."}]}. No markdown fences.`;
+  const sessionContext = buildSessionContext(sessions);
+  const userPrompt = `Summarize the APS March Meeting sessions for ${weekday}. The input is a JSON array of sessions, each with code, title, type, time range, and talk titles. Group the output topics by time of day (morning, afternoon, late afternoon). Write a single plain sentence for the overview. For each topic group, state the subject matter in one sentence. Use only what is in the data. Input: ${sessionContext}\nReturn only valid JSON: {"overview": "...", "topics": [{"name": "...", "detail": "..."}, ...], "highlights": [{"title": "...", "talkId": "...", "reason": "..."}]}. No markdown fences.`;
 
   const response = await fetch(LLM_API_URL, {
     method: "POST",
@@ -311,7 +311,7 @@ app.post("/summaries", async (req, res) => {
   }
 
   try {
-    const summary = await generateAiSummary(weekday, talks);
+    const summary = await generateAiSummary(weekday, daySessions);
     res.json({ summary });
   } catch (err) {
     console.error("[AI summary]", err);
@@ -398,6 +398,30 @@ app.get("/sessions", (req, res) => {
   });
 
   res.json({ sessions: sorted });
+});
+
+app.get("/notes/:userId", (req, res) => {
+  const { userId } = req.params;
+  res.json({ notes: getUserNotes(userId) });
+});
+
+app.put("/notes/:userId/:talkId", (req, res) => {
+  const { userId, talkId } = req.params;
+  const content = String(req.body?.content ?? "").trim();
+  if (!content) {
+    return res.status(400).json({ error: "content is required" });
+  }
+  const note = setNote(userId, talkId, content);
+  return res.status(200).json({ note });
+});
+
+app.delete("/notes/:userId/:talkId", (req, res) => {
+  const { userId, talkId } = req.params;
+  const removed = deleteNote(userId, talkId);
+  if (!removed) {
+    return res.status(404).json({ error: "note not found" });
+  }
+  return res.status(204).send();
 });
 
 app.get("/schedule/:userId", (req, res) => {

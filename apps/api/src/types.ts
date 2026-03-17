@@ -69,3 +69,8 @@ export type AiSummary = {
 export type AiSummaryResponse = {
   summary: AiSummary;
 };
+
+export type TalkNote = {
+  content: string;
+  updatedAt: string;
+};

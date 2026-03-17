@@ -26,9 +26,14 @@ body {
 
 .app-layout {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  grid-template-columns: minmax(300px, 1.5fr) minmax(0, 3fr) minmax(300px, 1.5fr);
   gap: 24px;
   align-items: flex-start;
+}
+
+.summary-column {
+  position: sticky;
+  top: 16px;
 }
 
 .content-column {
@@ -120,6 +125,27 @@ select {
   font-size: 1.4rem;
   flex: 1;
 }
+.summary-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-hide-btn {
+  background: transparent;
+  border: 1px solid rgba(29, 79, 122, 0.3);
+  color: var(--accent);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.summary-hide-btn:hover {
+  background: rgba(29, 79, 122, 0.08);
+}
+
 .summary-card {
   background: linear-gradient(180deg, #ffffff, #f4fbff);
   border: 1px solid rgba(29, 79, 122, 0.35);
@@ -263,6 +289,51 @@ select {
 
 .hidden {
   display: none;
+}
+
+.note-toggle {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.85rem;
+  padding: 5px 10px;
+  border-radius: 10px;
+}
+
+.note-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.note-area {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.note-textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  resize: vertical;
+  background: #fafbfc;
+  color: var(--ink);
+  min-height: 70px;
+}
+
+.note-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #fff;
+}
+
+.note-save-state {
+  font-size: 0.8rem;
+  color: #4a8a4a;
+  min-height: 1em;
 }
 
 .stats {

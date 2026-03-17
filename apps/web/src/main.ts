@@ -31,13 +31,41 @@ type Session = {
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "http://localhost:8787";
 const USER_ID = "internal-demo";
 
+// In-memory note cache; populated from API on init and kept in sync on save/delete
+const talkNotes = new Map<string, string>();
+
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("App root missing");
 
 app.innerHTML = `
-  <h1>APS Internal Scheduler</h1>
   <div class="app-layout">
+    <aside class="summary-column">
+      <div id="summary-card" class="summary-card hidden">
+        <div class="summary-card-header">
+          <div>
+            <p class="summary-card-label">AI insight</p>
+            <h2>Daily overview</h2>
+          </div>
+          <div class="summary-card-header-actions">
+            <span id="summary-card-state" class="summary-card-state"></span>
+            <button id="summary-hide" class="summary-hide-btn" type="button" title="Hide summary">&#x2212;</button>
+          </div>
+        </div>
+        <div id="summary-collapsible">
+          <div class="summary-card-controls">
+            <label for="summary-date-select">Day</label>
+            <select id="summary-date-select">
+              <option value="">Select a day</option>
+            </select>
+            <button id="summary-generate" type="button" disabled>Generate AI summary</button>
+          </div>
+          <p id="summary-card-message" class="summary-card-message">Checking AI summary availability…</p>
+          <div id="summary-result" class="summary-panel hidden"></div>
+        </div>
+      </div>
+    </aside>
     <main class="content-column">
+      <h1>APS Internal Scheduler</h1>
       <div class="panel row">
         <select id="view">
           <option value="talks">Talks</option>
@@ -86,24 +114,6 @@ app.innerHTML = `
           <option value="POSTER">Poster</option>
         </select>
         <button id="load">Find</button>
-      </div>
-      <div id="summary-card" class="summary-card hidden">
-        <div class="summary-card-header">
-          <div>
-            <p class="summary-card-label">AI insight</p>
-            <h2>Daily overview</h2>
-          </div>
-          <span id="summary-card-state" class="summary-card-state"></span>
-        </div>
-        <div class="summary-card-controls">
-          <label for="summary-date-select">Day</label>
-          <select id="summary-date-select">
-            <option value="">Select a day</option>
-          </select>
-          <button id="summary-generate" type="button" disabled>Generate AI summary</button>
-        </div>
-        <p id="summary-card-message" class="summary-card-message">Checking AI summary availability…</p>
-        <div id="summary-result" class="summary-panel hidden"></div>
       </div>
       <div id="stats" class="stats"></div>
       <div id="talks"></div>
@@ -282,6 +292,34 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+async function loadNotes(): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/notes/${USER_ID}`);
+    if (!response.ok) return;
+    const payload = (await response.json()) as { notes: Record<string, { content: string }> };
+    talkNotes.clear();
+    for (const [talkId, note] of Object.entries(payload.notes)) {
+      talkNotes.set(talkId, note.content);
+    }
+  } catch (err) {
+    console.warn("[loadNotes]", err);
+  }
+}
+
+async function saveNote(talkId: string, content: string): Promise<void> {
+  if (content.trim()) {
+    await fetch(`${API_BASE}/notes/${USER_ID}/${encodeURIComponent(talkId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: content.trim() })
+    });
+    talkNotes.set(talkId, content.trim());
+  } else {
+    await fetch(`${API_BASE}/notes/${USER_ID}/${encodeURIComponent(talkId)}`, { method: "DELETE" });
+    talkNotes.delete(talkId);
+  }
+}
+
 function buildGCalUrl(title: string, startTime: string, endTime: string, location: string, details: string): string {
   const toGCalDate = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   const params = new URLSearchParams({
@@ -329,8 +367,10 @@ async function loadTalks(): Promise<void> {
     .map(([date, talks]) => {
       const talksId = `talks-${date}`;
       const talksHtml = talks
-        .map(
-          (talk) => `
+        .map((talk) => {
+          const existingNote = talkNotes.get(talk.id) ?? "";
+          const hasNote = Boolean(existingNote);
+          return `
           <div class="panel">
             <div class="talk-title">${talk.sourceUrl ? `<a href="${talk.sourceUrl}" target="_blank" rel="noopener noreferrer">${talk.title}</a>` : talk.title}</div>
             <div>${talk.track} | ${formatDateTime(talk.startTime)}</div>
@@ -344,10 +384,15 @@ async function loadTalks(): Promise<void> {
                 rel="noopener noreferrer"
                 class="gcal-link"
               >Add to Google Calendar</a>
+              <button class="note-toggle" data-talk-id="${talk.id}" type="button">${hasNote ? "\uD83D\uDCDD Edit note" : "\uD83D\uDCDD Add note"}</button>
+            </div>
+            <div class="note-area${hasNote ? "" : " hidden"}">
+              <textarea class="note-textarea" data-talk-id="${talk.id}" placeholder="Your private note…" rows="3">${escapeHtml(existingNote)}</textarea>
+              <span class="note-save-state"></span>
             </div>
           </div>
-        `
-        )
+        `;
+        })
         .join("");
 
       return `
@@ -506,7 +551,8 @@ function refreshSummaryOptions(dates: string[]): void {
 }
 
 function applySummaryCapability(): void {
-  summaryCard.classList.remove("hidden");
+  // AI summary feature is temporarily hidden (still in development)
+  // summaryCard.classList.remove("hidden");
   summaryCardState.textContent = summaryEnabled ? "LLM ready" : "LLM not configured";
   summaryCardMessage.textContent = summaryEnabled
     ? "Pick a day and click Generate AI summary once the day appears."
@@ -628,6 +674,13 @@ summaryGenerateButton.addEventListener("click", async () => {
 
 document.addEventListener("click", async (event) => {
   const target = event.target as HTMLElement;
+  if (target.id === "summary-hide") {
+    const collapsible = document.getElementById("summary-collapsible");
+    if (!collapsible) return;
+    const isHidden = collapsible.classList.toggle("hidden");
+    target.textContent = isHidden ? "+" : "\u2212";
+  }
+
   if (target.id === "load") {
     await loadCurrentView();
   }
@@ -697,6 +750,40 @@ document.addEventListener("click", async (event) => {
     target.textContent = expanded ? "Show talks" : "Hide talks";
     details.classList.toggle("hidden", expanded);
   }
+
+  if (target.classList.contains("note-toggle")) {
+    const talkId = target.getAttribute("data-talk-id");
+    if (!talkId) return;
+    const panel = target.closest(".panel");
+    const noteArea = panel?.querySelector(".note-area");
+    noteArea?.classList.toggle("hidden");
+  }
+});
+
+document.addEventListener("focusout", async (event) => {
+  const target = event.target as HTMLElement;
+  if (!target.classList.contains("note-textarea")) return;
+  const talkId = target.getAttribute("data-talk-id");
+  if (!talkId) return;
+  const textarea = target as HTMLTextAreaElement;
+  const content = textarea.value;
+  const noteArea = target.closest(".note-area");
+  const saveState = noteArea?.querySelector(".note-save-state");
+  const panel = target.closest(".panel");
+  const toggleBtn = panel?.querySelector<HTMLButtonElement>(".note-toggle");
+  try {
+    await saveNote(talkId, content);
+    if (saveState) {
+      saveState.textContent = "Saved";
+      setTimeout(() => { saveState.textContent = ""; }, 2000);
+    }
+    if (toggleBtn) {
+      toggleBtn.textContent = content.trim() ? "\uD83D\uDCDD Edit note" : "\uD83D\uDCDD Add note";
+    }
+  } catch (err) {
+    console.warn("[saveNote]", err);
+    if (saveState) saveState.textContent = "Save failed";
+  }
 });
 
 
@@ -753,4 +840,4 @@ sessionTypeSelect.style.display = "none";
 queryInput.placeholder = "Search talks";
 
 initSummaryPanel();
-initTopics().then(() => loadCurrentView());
+loadNotes().then(() => initTopics()).then(() => loadCurrentView());
