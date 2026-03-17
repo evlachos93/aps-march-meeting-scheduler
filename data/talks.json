@@ -225,32 +225,6 @@
       "sourceUrl": "https://summit.aps.org/events/MAR-A16/479"
     },
     {
-      "id": "APS-4347",
-      "title": "A Practical Path to High-Fidelity Magic States in Silicon",
-      "abstract": "We present a compact resource analysis for producing high-fidelity logical magic states on silicon spin-qubit platforms. Our analysis evaluates a spectrum of connectivity architectures. These include a shuttling-based SpinBus design, where interactions are mediated by conveyor-mode electron trans- port, a dense nearest-neighbour layout, and several intermediate hybrid-connectivity models. For error correction, we consider both surface and color codes. We evaluate two magic-state-production models: the 5-to-1 and 15-to-1 distillation protocols. Our distillation-factory framework accounts for layout inefficiency, shuttling latency, and realistic space–time-volume costs. We extend our study beyond simple depolarizing-noise analyses to provide theoretical insight into realistic hardware con- straints. We also invert the resource-estimation process: given a target logical magic-state fidelity, we determine the corresponding experimental error rates and physical parameters required to achieve it. Thus, we offer practical guidance for experimentalists. Together, these results bridge the gap between hardware-aware quantum-resource theory and near-term silicon spin-qubit architectures, outlining optimal strategies for scalable, high-fidelity magic-state generation.",
-      "speakers": [],
-      "track": "FOCUS",
-      "topics": [
-        "quantum information",
-        "spin",
-        "error correction",
-        "quantum technology",
-        "modeling",
-        "semiconductors",
-        "qubits",
-        "quantum computing",
-        "algorithms",
-        "topological systems",
-        "noise",
-        "formal theory",
-        "simulations"
-      ],
-      "room": "Convention Center, Mile High Ballroom 1E",
-      "startTime": "2026-03-16T08:12:00-06:00",
-      "endTime": "2026-03-16T08:24:00-06:00",
-      "sourceUrl": "https://summit.aps.org/events/MAR-A09/472"
-    },
-    {
       "id": "APS-4397",
       "title": "Methods for Describing and Comparing TLS Impacts",
       "abstract": "The performance of superconducting qubits and two-qubit gates is often limited by two-level systems (TLS) losses. Characterizing TLS distributions and coupling strengths is critical for making informed decisions about chip design, material stack choices, and fabrication processes that affect these losses. These characteristics are complicated by the frequency-distributions of TLS, changes in these distributions over time, and variations between qubits, chips, and wafers. Here, we discuss analysis of data collected using swap spectroscopy to capture both coherent and incoherent TLS interactions. We outline several methods for characterizing TLS distributions over large sample sets, including frequency-density measurements (#/GHz) and a coupling-weighted frequency density metric, spectral pollution index (SPI). We also discuss various methods for collecting and analyzing TLS data, as well as extracting meaningful conclusions from limited datasets. Our findings highlight the importance of a systematic approach to TLS characterization.",

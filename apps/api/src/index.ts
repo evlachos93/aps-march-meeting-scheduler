@@ -2,14 +2,13 @@ import cors from "cors";
 import express from "express";
 import { buildIcs } from "./ics.js";
 import { addToSchedule, getDailySummary, getSessions, getTalks, getUiTopics, getUserSchedule, removeFromSchedule } from "./store.js";
-import type { AiSummary, AiSummaryHighlight, AiSummaryTopic, Session } from "./types.js";
+import type { AiSummary, AiSummaryHighlight, AiSummaryTopic, Session, Talk } from "./types.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 8787);
 const LLM_API_URL = process.env.SESSIONS_LLM_API_URL?.trim();
 const LLM_API_KEY = process.env.SESSIONS_LLM_API_KEY?.trim();
 const LLM_MODEL = process.env.SESSIONS_LLM_MODEL?.trim() ?? "gpt-4o-mini";
-const SUMMARY_TALK_CONTEXT_LIMIT = 18;
 const SUMMARY_RESPONSE_TEMPERATURE = 0.3;
 
 const WEEKDAY_ORDER: Record<string, number> = {
@@ -138,33 +137,22 @@ function isoDateFromTimestamp(value?: string): string | null {
   return match ? match[1] : null;
 }
 
-function formatTalkTimeRange(talk: Talk): string {
-  const format = (timestamp?: string): string => {
-    if (!timestamp) {
-      return "TBD";
-    }
-    const date = new Date(timestamp);
-    if (Number.isNaN(date.valueOf())) {
-      return "TBD";
-    }
-    const hours = String(date.getUTCHours()).padStart(2, "0");
-    const minutes = String(date.getUTCMinutes()).padStart(2, "0");
-    return `${hours}:${minutes}`;
-  };
-  const start = format(talk.startTime);
-  const end = format(talk.endTime);
-  return `${start}–${end}`;
+function formatTime(timestamp?: string): string {
+  if (!timestamp) return "TBD";
+  const d = new Date(timestamp);
+  if (Number.isNaN(d.valueOf())) return "TBD";
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
 function buildTalkContext(talks: Talk[]): string {
-  return talks
-    .slice(0, SUMMARY_TALK_CONTEXT_LIMIT)
-    .map((talk) => {
-      const topics = talk.topics.length ? talk.topics.join(", ") : "general";
-      const room = talk.room ? ` | room: ${talk.room}` : "";
-      return `• ${talk.title} | ${talk.track} | ${formatTalkTimeRange(talk)} | topics: ${topics}${room}`;
-    })
-    .join("\n");
+  const items = talks.map((talk) => ({
+    id: talk.id,
+    time: `${formatTime(talk.startTime)}–${formatTime(talk.endTime)}`,
+    title: talk.title,
+    track: talk.track,
+    topics: talk.topics.length ? talk.topics : ["general"]
+  }));
+  return JSON.stringify(items);
 }
 
 function normalizeTopic(input: unknown): AiSummaryTopic | null {
@@ -194,7 +182,7 @@ function normalizeHighlight(input: unknown): AiSummaryHighlight | null {
   return { title, reason, talkId };
 }
 
-function parseAiSummaryPayload(content: string, date: string): AiSummary {
+function parseAiSummaryPayload(content: string, weekday: string): AiSummary {
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);
@@ -220,20 +208,20 @@ function parseAiSummaryPayload(content: string, date: string): AiSummary {
     .filter((item): item is AiSummaryHighlight => Boolean(item));
 
   return {
-    date,
+    date: weekday,
     overview,
     topics,
     highlights: highlights.length ? highlights : undefined
   };
 }
 
-async function generateAiSummary(date: string, talks: Talk[]): Promise<AiSummary> {
+async function generateAiSummary(weekday: string, talks: Talk[]): Promise<AiSummary> {
   if (!LLM_API_URL || !LLM_API_KEY) {
     throw new Error("LLM configuration missing");
   }
 
   const talkContext = buildTalkContext(talks);
-  const userPrompt = `Summarize the APS March Meeting activities for ${date}. Provide an overview that highlights the most interesting topics and a sense of what attendees can expect. Include any emerging themes or cross-cutting threads. Use the following talks to ground your answer:\n${talkContext}\nReturn only valid JSON with the structure {"overview": "...", "topics": [{"name": "...", "detail": "..."}, ...], "highlights": [{"title": "...", "talkId": "...", "reason": "..."}, ...]}. Do not wrap the JSON in markdown.`;
+  const userPrompt = `Summarize the APS March Meeting talks for ${weekday}. The input is a JSON array of talks, each with id, time (HH:MM–HH:MM), title, track, and topics. Group the output topics by time of day (morning, afternoon, late afternoon). Write a single plain sentence for the overview. For each topic group, state the subject matter in one sentence. Use only what is in the data. Input: ${talkContext}\nReturn only valid JSON: {"overview": "...", "topics": [{"name": "...", "detail": "..."}, ...], "highlights": [{"title": "...", "talkId": "...", "reason": "..."}]}. No markdown fences.`;
 
   const response = await fetch(LLM_API_URL, {
     method: "POST",
@@ -244,7 +232,7 @@ async function generateAiSummary(date: string, talks: Talk[]): Promise<AiSummary
     body: JSON.stringify({
       model: LLM_MODEL,
       messages: [
-        { role: "system", content: "You are a conference research assistant for quantum computing." },
+        { role: "system", content: "You are a factual conference schedule assistant. Be concise and neutral. No filler words, no enthusiasm, no encouragement. Report only what is in the data." },
         { role: "user", content: userPrompt }
       ],
       temperature: SUMMARY_RESPONSE_TEMPERATURE,
@@ -263,7 +251,7 @@ async function generateAiSummary(date: string, talks: Talk[]): Promise<AiSummary
     throw new Error("LLM returned empty content");
   }
 
-  return parseAiSummaryPayload(content, date);
+  return parseAiSummaryPayload(content, weekday);
 }
 
 app.use(cors());
@@ -303,18 +291,27 @@ app.post("/summaries", async (req, res) => {
     return res.status(503).json({ error: "AI summary endpoint is not configured" });
   }
 
-  const date = String(req.body?.date ?? "").trim();
-  if (!DATE_PATTERN.test(date)) {
-    return res.status(400).json({ error: "date must be provided in yyyy-mm-dd format" });
+  const weekday = String(req.body?.weekday ?? "").trim().toLowerCase();
+  const dayNumber = parseDay(weekday);
+  if (dayNumber === null) {
+    return res.status(400).json({ error: "weekday must be a day name, e.g. monday" });
   }
 
-  const talks = getTalks().filter((talk) => isoDateFromTimestamp(talk.startTime) === date);
+  const daySessions = getSessions().filter(
+    (session) => session.weekday?.toLowerCase() === weekday
+  );
+  if (!daySessions.length) {
+    return res.status(404).json({ error: "no sessions found for the requested weekday" });
+  }
+
+  const talkIdSet = new Set(daySessions.flatMap((session) => session.talkIds));
+  const talks = getTalks().filter((talk) => talkIdSet.has(talk.id));
   if (!talks.length) {
-    return res.status(404).json({ error: "no talks found for the requested date" });
+    return res.status(404).json({ error: "no talks resolved for the requested weekday" });
   }
 
   try {
-    const summary = await generateAiSummary(date, talks);
+    const summary = await generateAiSummary(weekday, talks);
     res.json({ summary });
   } catch (err) {
     console.error("[AI summary]", err);

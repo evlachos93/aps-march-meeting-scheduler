@@ -595,7 +595,7 @@ summaryGenerateButton.addEventListener("click", async () => {
     const response = await fetch(`${API_BASE}/summaries`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date })
+      body: JSON.stringify({ weekday: new Date(date).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" }).toLowerCase() })
     });
     const data = (await response.json().catch(() => null)) as unknown;
     if (!response.ok) {
