@@ -78,13 +78,13 @@ app.innerHTML = `
             <input type="radio" name="timeSlot" value="all" checked /> All times
           </label>
           <label>
-            <input type="radio" name="timeSlot" value="morning" /> Morning (8-11am)
+            <input type="radio" name="timeSlot" value="morning" /> 8-11am
           </label>
           <label>
-            <input type="radio" name="timeSlot" value="afternoon" /> Afternoon (11am-2pm)
+            <input type="radio" name="timeSlot" value="afternoon" /> 11am-2pm
           </label>
           <label>
-            <input type="radio" name="timeSlot" value="lateafternoon" /> Late Afternoon (2-5pm)
+            <input type="radio" name="timeSlot" value="lateafternoon" /> 2pm-midnight
           </label>
         </div>
         <select id="topic">
