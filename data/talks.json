@@ -2,28 +2,6 @@
   "total": 975,
   "talks": [
     {
-      "id": "APS-864",
-      "title": "Short Course: Computational Approaches For Quantum Defects",
-      "abstract": "9:00-10:00 Overview of quantum defect simulations (Galli)<br><br>10:00-11:00 WEST for excited-state energies and geometries (Govoni)<br><br>11:00-12:00 Hands-on Session (Yu)<br><br>12:00-1:00 Lunch<br><br>1:00-2:00 PyCCE for spin coherence times (Nagura)<br><br>2:00-3:00 Hands-on Session (Nagura)",
-      "speakers": [],
-      "track": "ORAL",
-      "topics": [
-        "quantum information",
-        "computational physics",
-        "defects",
-        "spin defects",
-        "atomistic simulations",
-        "spin dynamics",
-        "quantum simulations",
-        "electronic structure"
-      ],
-      "room": "Convention Center, Meeting Room 507",
-      "startTime": "2026-03-15T09:00:00-06:00",
-      "endTime": "2026-03-15T15:00:00-06:00",
-      "sourceUrl": "https://summit.aps.org/events/MAR-SH06/77",
-      "weekday": "Sunday"
-    },
-    {
       "id": "APS-13238",
       "title": "Prehistoric qubits: experiments testing the fundamental physics of superconducting quantum devices",
       "abstract": "The physics Nobel prize of 2025 was awarded for pioneering experiments on the current-biased Josephson junction, showing macroscopic quantum tunneling and energy-level quantization. I will describe the fundamental understanding of its physics, including the need for microwave engineering of the device, filtering of noise, and measurement of the device parameters. Important checks will be explained. I will also briefly review a few experiments that led to the development of quantum computers, leading to the demonstration of powerful computing in the quantum supremacy experiment. Finally, I will explain my view of the future, the need for advanced manufacturing.",
