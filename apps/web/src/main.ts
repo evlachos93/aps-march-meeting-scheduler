@@ -39,7 +39,7 @@ if (!app) throw new Error("App root missing");
 
 app.innerHTML = `
   <div class="app-layout">
-    <aside class="summary-column">
+    <aside class="summary-column hidden">
       <div id="summary-card" class="summary-card hidden">
         <div class="summary-card-header">
           <div>
