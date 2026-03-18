@@ -9,6 +9,7 @@
 - `GET /talks?q=<text>&topic=<topic>&track=<track>&sortBy=<time|title|track|weekday>`
   - `weekday`: orders talks by the day of the week (Sunday=0) and then by start time
   - `q`: full-text search across title, abstract, and speakers
+  - `searchMode`: optional; `default` (title/abstract/speakers) or `author-affiliation` (author names and affiliations)
   - `topic`: exact match against a `Talk.topics` entry (lowercase)
   - `track`: exact match against `Talk.track` (e.g. `INVITED`, `FOCUS`, `ORAL`, `POSTER`)
   - `sortBy`: `time` (default), `title`, `track`, or `weekday`

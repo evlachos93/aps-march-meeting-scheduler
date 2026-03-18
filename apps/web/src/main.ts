@@ -82,6 +82,10 @@ app.innerHTML = `
           <button type="button" class="view-button" data-view="sessions">Sessions</button>
         </div>
         <input id="query" placeholder="Search talks" />
+        <select id="talk-search-mode">
+          <option value="default" selected>title, abstract, topic</option>
+          <option value="author-affiliation">author/affiliation</option>
+        </select>
         <div class="time-filter-group">
           <label>
             <input type="radio" name="timeSlot" value="all" checked /> All times
@@ -209,6 +213,7 @@ const topicClearButton = document.querySelector<HTMLButtonElement>("#topic-clear
 const daySelect = document.querySelector<HTMLSelectElement>("#day")!;
 const trackSelect = document.querySelector<HTMLSelectElement>("#track")!;
 const sessionTypeSelect = document.querySelector<HTMLSelectElement>("#sessionType")!;
+const talkSearchModeSelect = document.querySelector<HTMLSelectElement>("#talk-search-mode")!;
 const timeSlotRadios = document.querySelectorAll<HTMLInputElement>("input[name=\"timeSlot\"]");
 const topicLabels = new Map<string, string>();
 let currentView: 'talks' | 'sessions' = 'talks';
@@ -224,9 +229,21 @@ if (
   !topicClearButton ||
   !daySelect ||
   !trackSelect ||
-  !sessionTypeSelect
+  !sessionTypeSelect ||
+  !talkSearchModeSelect
 ) {
   throw new Error("Missing UI controls");
+}
+
+function updateQueryPlaceholder(): void {
+  if (currentView === "sessions") {
+    queryInput.placeholder = "Search sessions";
+    return;
+  }
+  queryInput.placeholder =
+    talkSearchModeSelect.value === "author-affiliation"
+      ? "Search author or affiliation"
+      : "Search title, abstract, topic";
 }
 
 function formatDateTime(value: string | undefined): string {
@@ -366,7 +383,8 @@ function setView(view: "talks" | "sessions"): void {
   }
   trackSelect.style.display = showingTalks ? "" : "none";
   sessionTypeSelect.style.display = showingTalks ? "none" : "";
-  queryInput.placeholder = showingTalks ? "Search talks" : "Search sessions";
+  talkSearchModeSelect.style.display = showingTalks ? "" : "none";
+  updateQueryPlaceholder();
 }
 
 async function loadSchedule(): Promise<void> {
@@ -532,6 +550,7 @@ async function loadTalks(): Promise<void> {
   if (day) params.set("day", day);
   if (track) params.set("track", track);
   if (timeSlot !== "all") params.set("timeSlot", timeSlot);
+  if (talkSearchModeSelect.value !== "default") params.set("searchMode", talkSearchModeSelect.value);
 
   const url = `${API_BASE}/talks?${params.toString()}`;
   console.log(`[loadTalks] Fetching: ${url}`);
@@ -1027,6 +1046,13 @@ topicClearButton.addEventListener("click", (event) => {
 
 topicOptions.addEventListener("change", () => {
   updateTopicButtonLabel();
+});
+
+talkSearchModeSelect.addEventListener("change", async () => {
+  updateQueryPlaceholder();
+  if (currentView === "talks") {
+    await loadCurrentView();
+  }
 });
 
 scheduleDaySelect.addEventListener("change", () => {

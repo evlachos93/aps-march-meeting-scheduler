@@ -329,6 +329,7 @@ app.post("/summaries", async (req, res) => {
 
 app.get("/talks", (req, res) => {
   const q = String(req.query.q ?? "").trim().toLowerCase();
+  const searchMode = String(req.query.searchMode ?? "default").trim().toLowerCase();
   const topic = String(req.query.topic ?? "").trim().toLowerCase();
   const topicsParam = String(req.query.topics ?? "").trim().toLowerCase();
   const track = String(req.query.track ?? "").trim().toLowerCase();
@@ -343,14 +344,22 @@ app.get("/talks", (req, res) => {
     : topic
     ? [topic]
     : [];
-  console.log(`[API /talks] Filtering by q="${q}", topics="${topicFilters.join(",")}", track="${track}", timeSlot="${timeSlot}", day="${req.query.day ?? ""}"`);
+  console.log(`[API /talks] Filtering by q="${q}", searchMode="${searchMode}", topics="${topicFilters.join(",")}", track="${track}", timeSlot="${timeSlot}", day="${req.query.day ?? ""}"`);
 
   const filtered = getTalks().filter((talk) => {
-    const matchesQuery =
-      !q ||
+    const matchesDefaultQuery =
       talk.title.toLowerCase().includes(q) ||
       talk.abstract.toLowerCase().includes(q) ||
-      talk.speakers.some((s) => s.toLowerCase().includes(q));
+      talk.topics.some((topic) => topic.toLowerCase().includes(q));
+    const matchesAuthorAffiliationQuery =
+      talk.authors?.some(
+        (author) =>
+          author.name.toLowerCase().includes(q) ||
+          author.affiliations.some((affiliation) => affiliation.toLowerCase().includes(q))
+      ) ?? false;
+    const matchesQuery =
+      !q ||
+      (searchMode === "author-affiliation" ? matchesAuthorAffiliationQuery : matchesDefaultQuery);
     const matchesTopic =
       !topicFilters.length ||
       topicFilters.some((topicFilter) =>
