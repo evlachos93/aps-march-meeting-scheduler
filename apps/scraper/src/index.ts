@@ -6,7 +6,7 @@ import { CONCURRENCY, mapConcurrent } from "./utils.js";
 
 const DATA_ROOT = "https://makoshark-data.aps.org/441";
 const EVENT_INDEX_URL = `${DATA_ROOT}/_ndx/meeting/sort-event-by-time.json`;
-const DEFAULT_OUTPUT_RELATIVE = "data/talks.generated.json";
+const DEFAULT_OUTPUT_RELATIVE = "data/talks.enriched.json";
 const PREFERENCES_PATH = new URL("../../../data/session-preferences.txt", import.meta.url);
 const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const DEFAULT_MEETING_PREFIX = "";
@@ -78,6 +78,8 @@ type Talk = {
   title: string;
   abstract: string;
   speakers: string[];
+  authors: string[];
+  presenter: string;
   track: string;
   topics: string[];
   room: string;
@@ -108,12 +110,20 @@ type PresentationRecord = {
   end?: string;
   topics?: string[];
   type?: string;
+  author_ids?: number[];
+  presenter_ids?: number[];
 };
 
 type LocationRecord = {
   id: number;
   building?: string;
   room?: string;
+};
+
+type IndividualRecord = {
+  id: number;
+  first_name?: string;
+  last_name?: string;
 };
 
 type ScrapeResult = {
@@ -134,6 +144,7 @@ type EventCandidate = {
 };
 
 const locationCache = new Map<number, LocationRecord | null>();
+const individualCache = new Map<number, IndividualRecord | null>();
 
 function normalize(value: string): string {
   return value.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
@@ -268,7 +279,8 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 function buildEventUrl(code: string, id: number): string {
-  return `https://summit.aps.org/events/${code}/${id}`;
+  // Use /smt/2026/ prefix which seems to be the one containing more static content
+  return `https://summit.aps.org/smt/2026/events/${code}/${id}`;
 }
 
 function eventPassesStructuralFilters(event: EventRecord, allowedTypes: Set<string>): boolean {
@@ -369,7 +381,26 @@ async function getLocationLabel(locationIds: number[] | undefined): Promise<stri
   return pieces.length > 0 ? pieces.join(", ") : "TBD";
 }
 
-function toTalk(record: PresentationRecord, event: EventRecord, room: string): Talk {
+async function fetchIndividualName(id: number): Promise<string | null> {
+  if (!individualCache.has(id)) {
+    try {
+      const individual = await fetchJson<IndividualRecord>(`${DATA_ROOT}/individual/${id}.json`);
+      individualCache.set(id, individual);
+    } catch {
+      individualCache.set(id, null);
+    }
+  }
+
+  const individual = individualCache.get(id);
+  if (!individual) {
+    return null;
+  }
+
+  const parts = [individual.first_name, individual.last_name].filter(Boolean).map((p) => normalize(String(p)));
+  return parts.length > 0 ? parts.join(" ") : null;
+}
+
+async function toTalk(record: PresentationRecord, event: EventRecord, room: string): Promise<Talk> {
   const eventPeriod = event.periods?.[0];
   const startDate = parseDateOrUndefined(record.start) ?? parseDateOrUndefined(eventPeriod?.start) ?? new Date();
   const endDate =
@@ -380,11 +411,32 @@ function toTalk(record: PresentationRecord, event: EventRecord, room: string): T
   const startTime = toMeetingTimeIso(startDate);
   const endTime = toMeetingTimeIso(endDate);
 
+  const authorIds = record.author_ids ?? [];
+  const presenterIds = new Set(record.presenter_ids ?? []);
+
+  const nameResults = await Promise.allSettled(authorIds.map((id) => fetchIndividualName(id)));
+  const authors = nameResults
+    .map((r) => (r.status === "fulfilled" ? r.value : null))
+    .filter((name): name is string => name !== null);
+
+  const presenterName =
+    authorIds
+      .filter((id) => presenterIds.has(id))
+      .map((id) => {
+        const result = nameResults[authorIds.indexOf(id)];
+        return result?.status === "fulfilled" ? result.value : null;
+      })
+      .find((name): name is string => name !== null) ??
+    authors[0] ??
+    "";
+
   return {
     id: `APS-${record.id}`,
     title: normalize(record.title),
     abstract: normalize(record.abstract ?? ""),
-    speakers: [],
+    speakers: presenterName ? [presenterName] : authors,
+    authors,
+    presenter: presenterName,
     track: canonicalizeEventType(event.type) || "UNKNOWN",
     topics: [...new Set([...(record.topics ?? []), ...(event.topics ?? [])].map((t) => normalize(t).toLowerCase()))],
     room,
@@ -431,7 +483,7 @@ async function enrichCandidateWithTalks(
     presentationIds.map((presentationId) => fetchJson<PresentationRecord>(`${DATA_ROOT}/presentation/${presentationId}.json`))
   );
 
-  const talks: Talk[] = [];
+  const talkPromises: Array<Promise<Talk>> = [];
   for (let i = 0; i < presentationResults.length; i++) {
     const result = presentationResults[i]!;
     if (result.status === "rejected") {
@@ -439,10 +491,11 @@ async function enrichCandidateWithTalks(
       continue;
     }
     if (talkLooksInteresting(result.value, preferences)) {
-      talks.push(toTalk(result.value, event, room));
+      talkPromises.push(toTalk(result.value, event, room));
     }
   }
 
+  const talks = await Promise.all(talkPromises);
   return { talks };
 }
 
