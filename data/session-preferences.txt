@@ -3,7 +3,7 @@ preferredphrases: fault tolerance, logical qubit, quantum control
 architectures: superconducting qubits
 
 # AREAS OF INTEREST
-I want to focus on quantum computing, quantum information, qubits, superconducting qubits, quantum hardware.
+I want to focus on quantum computing, quantum information, superconducting qubits, quantum hardware.
 I am also interested in the following areas of quantum computing: error correction, fault tolerance, quantum control, error mitigation, calibration, readout, coherence, noise, cryogenics, fabrication.
 I am also interested in quantum algorithms, quantum simulation, benchmarking, verification, compiler, software, ai, machine learning.
 
@@ -12,6 +12,6 @@ I am also interested in quantum algorithms, quantum simulation, benchmarking, ve
 # Higher penalties are also applied to the ranking score for these keywords.
 avoid high energy physics, particle physics, nuclear physics, astrophysics, heavy ion collisions, particle detector
 avoid gauge theory, neutrinos, mesons, leptons, colliders, hadronic, lattice qcd, dark matter, cosmic rays, nucleon, accelerators, bolometers, nuclear theory
-avoid gravit, cosmic, astronomy, telescope, b-decay, top quark, higgs, standard model, supersymmetry, dark energy, general relativity, quantum gravity
+avoid gravit, cosmic, astronomy, telescope, b-decay, top quark, higgs, standard model, supersymmetry, dark energy, general relativity, quantum gravity, plasma physics, polymer, 
 
 I prefer talks between 8:00 AM and 8:00 PM.

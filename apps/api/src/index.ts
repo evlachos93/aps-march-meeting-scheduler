@@ -79,8 +79,8 @@ function getTalkWeekday(talk: Talk): number {
 const MINUTES_PER_DAY = 24 * 60;
 const TIME_SLOT_RANGES: Record<string, { start: number; end: number }> = {
   morning: { start: 8 * 60, end: 11 * 60 },
-  afternoon: { start: 11 * 60, end: 14 * 60 },
-  lateafternoon: { start: 14 * 60, end: MINUTES_PER_DAY }
+  afternoon: { start: 11 * 60, end: 15 * 60 },
+  lateafternoon: { start: 15 * 60, end: MINUTES_PER_DAY }
 };
 
 function getLocalMinutesFromTimestamp(value?: string): number | null {

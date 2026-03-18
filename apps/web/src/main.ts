@@ -90,10 +90,10 @@ app.innerHTML = `
             <input type="radio" name="timeSlot" value="morning" /> 8-11am
           </label>
           <label>
-            <input type="radio" name="timeSlot" value="afternoon" /> 11am-2pm
+            <input type="radio" name="timeSlot" value="afternoon" /> 11am-3pm
           </label>
           <label>
-            <input type="radio" name="timeSlot" value="lateafternoon" /> 2pm-midnight
+            <input type="radio" name="timeSlot" value="lateafternoon" /> 3pm-end-of-day
           </label>
         </div>
         <div class="topic-dropdown" id="topic-filter">
