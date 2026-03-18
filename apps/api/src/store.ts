@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
-import talksJson from "../../../data/talks.json" with { type: "json" };
+import talksJson from "../../../data/talks-v2.json" with { type: "json" };
 import sessionsJson from "../../../data/sessions.json" with { type: "json" };
 import uiTopicsJson from "../../../data/ui-topics.json" with { type: "json" };
 import dailySummariesJson from "../../../data/daily-summaries.json" with { type: "json" };

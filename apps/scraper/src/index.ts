@@ -73,12 +73,17 @@ const KEYWORDS = [
   "control"
 ];
 
+type Author = {
+  name: string;
+  affiliations: string[];
+};
+
 type Talk = {
   id: string;
   title: string;
   abstract: string;
   speakers: string[];
-  authors: string[];
+  authors: Author[];
   presenter: string;
   track: string;
   topics: string[];
@@ -124,6 +129,12 @@ type IndividualRecord = {
   id: number;
   first_name?: string;
   last_name?: string;
+  affiliation_ids?: number[];
+};
+
+type OrganizationRecord = {
+  id: number;
+  name?: string;
 };
 
 type ScrapeResult = {
@@ -145,6 +156,7 @@ type EventCandidate = {
 
 const locationCache = new Map<number, LocationRecord | null>();
 const individualCache = new Map<number, IndividualRecord | null>();
+const organizationCache = new Map<number, OrganizationRecord | null>();
 
 function normalize(value: string): string {
   return value.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
@@ -381,7 +393,21 @@ async function getLocationLabel(locationIds: number[] | undefined): Promise<stri
   return pieces.length > 0 ? pieces.join(", ") : "TBD";
 }
 
-async function fetchIndividualName(id: number): Promise<string | null> {
+async function fetchOrganizationName(id: number): Promise<string | null> {
+  if (!organizationCache.has(id)) {
+    try {
+      const org = await fetchJson<OrganizationRecord>(`${DATA_ROOT}/organization/${id}.json`);
+      organizationCache.set(id, org);
+    } catch {
+      organizationCache.set(id, null);
+    }
+  }
+
+  const org = organizationCache.get(id);
+  return org?.name ? normalize(org.name) : null;
+}
+
+async function fetchIndividual(id: number): Promise<Author | null> {
   if (!individualCache.has(id)) {
     try {
       const individual = await fetchJson<IndividualRecord>(`${DATA_ROOT}/individual/${id}.json`);
@@ -396,8 +422,19 @@ async function fetchIndividualName(id: number): Promise<string | null> {
     return null;
   }
 
-  const parts = [individual.first_name, individual.last_name].filter(Boolean).map((p) => normalize(String(p)));
-  return parts.length > 0 ? parts.join(" ") : null;
+  const nameParts = [individual.first_name, individual.last_name].filter(Boolean).map((p) => normalize(String(p)));
+  if (nameParts.length === 0) {
+    return null;
+  }
+
+  const affiliationResults = await Promise.allSettled(
+    (individual.affiliation_ids ?? []).map((affId) => fetchOrganizationName(affId))
+  );
+  const affiliations = affiliationResults
+    .map((r) => (r.status === "fulfilled" ? r.value : null))
+    .filter((name): name is string => name !== null);
+
+  return { name: nameParts.join(" "), affiliations };
 }
 
 async function toTalk(record: PresentationRecord, event: EventRecord, room: string): Promise<Talk> {
@@ -414,27 +451,29 @@ async function toTalk(record: PresentationRecord, event: EventRecord, room: stri
   const authorIds = record.author_ids ?? [];
   const presenterIds = new Set(record.presenter_ids ?? []);
 
-  const nameResults = await Promise.allSettled(authorIds.map((id) => fetchIndividualName(id)));
-  const authors = nameResults
+  const authorResults = await Promise.allSettled(authorIds.map((id) => fetchIndividual(id)));
+  const authors = authorResults
     .map((r) => (r.status === "fulfilled" ? r.value : null))
-    .filter((name): name is string => name !== null);
+    .filter((a): a is Author => a !== null);
 
-  const presenterName =
+  const presenterAuthor =
     authorIds
       .filter((id) => presenterIds.has(id))
       .map((id) => {
-        const result = nameResults[authorIds.indexOf(id)];
+        const result = authorResults[authorIds.indexOf(id)];
         return result?.status === "fulfilled" ? result.value : null;
       })
-      .find((name): name is string => name !== null) ??
+      .find((a): a is Author => a !== null) ??
     authors[0] ??
-    "";
+    null;
+
+  const presenterName = presenterAuthor?.name ?? "";
 
   return {
     id: `APS-${record.id}`,
     title: normalize(record.title),
     abstract: normalize(record.abstract ?? ""),
-    speakers: presenterName ? [presenterName] : authors,
+    speakers: presenterName ? [presenterName] : authors.map((a) => a.name),
     authors,
     presenter: presenterName,
     track: canonicalizeEventType(event.type) || "UNKNOWN",

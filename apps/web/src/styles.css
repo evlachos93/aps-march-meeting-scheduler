@@ -63,6 +63,26 @@ body {
   margin-bottom: 6px;
 }
 
+.talk-authors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+  color: var(--fg-muted, #555);
+}
+
+.talk-author {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.talk-affiliation {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
 button,
 input,
 select {

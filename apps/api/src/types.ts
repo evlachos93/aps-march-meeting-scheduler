@@ -1,8 +1,15 @@
+export type Author = {
+  name: string;
+  affiliations: string[];
+};
+
 export type Talk = {
   id: string;
   title: string;
   abstract: string;
   speakers: string[];
+  authors: Author[];
+  presenter: string;
   track: string;
   topics: string[];
   room: string;

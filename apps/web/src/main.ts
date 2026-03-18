@@ -2,11 +2,18 @@ import "./styles.css";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 
+type Author = {
+  name: string;
+  affiliations: string[];
+};
+
 type Talk = {
   id: string;
   title: string;
   abstract: string;
   speakers: string[];
+  authors: Author[];
+  presenter: string;
   track: string;
   topics: string[];
   room: string;
@@ -553,8 +560,9 @@ async function loadTalks(): Promise<void> {
           const hasNote = Boolean(existingNote);
           return `
           <div class="panel">
-            <div class="talk-title">${talk.sourceUrl ? `<a href="${talk.sourceUrl}" target="_blank" rel="noopener noreferrer">${talk.title}</a>` : talk.title}</div>
-            <div>${talk.track} | ${formatDateTime(talk.startTime)}</div>
+            <div class="talk-title">${talk.sourceUrl ? `<a href="${talk.sourceUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(talk.title)}</a>` : escapeHtml(talk.title)}</div>
+            ${talk.authors?.length ? `<div class="talk-authors">${talk.authors.map((a) => `<span class="talk-author">${escapeHtml(a.name)}${a.affiliations.length ? `<span class="talk-affiliation">${escapeHtml(a.affiliations[0]!)}</span>` : ""}</span>`).join("")}</div>` : ""}
+            <div>${escapeHtml(talk.track)} | ${formatDateTime(talk.startTime)}</div>
             <div>${talk.room}</div>
             <p>${talk.abstract}</p>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
