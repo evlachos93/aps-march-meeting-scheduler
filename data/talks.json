@@ -1824,6 +1824,30 @@
       "weekday": "Monday"
     },
     {
+      "id": "APS-14979",
+      "title": "Machine learning for practical quantum error mitigation",
+      "abstract": "Quantum computers have progressed towards outperforming classical supercomputers, but quantum errors remain the primary obstacle. In the past few years, the field of quantum error mitigation has provided strategies for overcoming errors in near-term devices, enabling improved accuracy at the cost of additional run time. Through experiments on state-of-the-art quantum computers using up to 100 qubits, we demonstrate that without sacrificing accuracy, machine learning for quantum error mitigation (ML-QEM) drastically reduces the cost of mitigation. We benchmarked ML-QEM using a variety of machine learning models—linear regression, random forest, multilayer perceptron and graph neural networks—on diverse classes of quantum circuits, over increasingly complex device noise profiles, under interpolation and extrapolation, and in both numerics and experiments. These tests employed the popular digital zero-noise extrapolation method as an added reference. Finally, we propose a path towards scalable mitigation using ML-QEM to mimic traditional mitigation methods with superior runtime efficiency. Our results show that classical machine learning can extend the reach and practicality of quantum error mitigation by reducing its overhead and highlight its broader potential for practical quantum computations. We also touch on recent developments, such as Pauli Path ZNE, developed and used in the NMR OTOC Google experiment.",
+      "speakers": [],
+      "track": "FOCUS",
+      "topics": [
+        "quantum information",
+        "quantum computing",
+        "noise",
+        "error correction",
+        "algorithms",
+        "quantum simulations",
+        "quantum characterization",
+        "quantum devices",
+        "qubits",
+        "quantum control"
+      ],
+      "room": "Convention Center, Mile High Ballroom 1C",
+      "startTime": "2026-03-16T09:00:00-06:00",
+      "endTime": "2026-03-16T09:36:00-06:00",
+      "sourceUrl": "https://summit.aps.org/events/MAR-A07/470",
+      "weekday": "Monday"
+    },
+    {
       "id": "APS-4625",
       "title": "Quantum Enhanced Signature Kernels for Limit Order Book mid-price predictions",
       "abstract": "<br><br>Empirical evidence suggests that well-chosen quantum feature maps promise to enhance the performance of Machine Learning (ML) algorithms. Theoretical arguments suggest that the specific property that makes these quantum transformations useful for ML purposes is the amount of ‘magic’&nbsp; or non-stabiliserness of the output state of a circuit defining the quantum feature map.&nbsp; In this work, we use an exact state vector simulation to experimentally test the use of quantum enhanced signature kernels up to 32 qubits to predict the mid-price using Limit Order Book (LOB) data. We benchmark our model against state of the art deep learning models.&nbsp;",

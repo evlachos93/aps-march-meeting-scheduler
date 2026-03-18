@@ -83,6 +83,7 @@ type Talk = {
   room: string;
   startTime: string;
   endTime: string;
+  weekday?: string;
   sourceUrl: string;
 };
 
@@ -208,6 +209,26 @@ function toMeetingTimeIso(date: Date): string {
     : "+00:00";
 
   return `${year}-${month}-${day}T${hour}:${minute}:${second}${offset}`;
+}
+
+const ISO_DATE_PATTERN = /^(\d{4}-\d{2}-\d{2})/;
+const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  weekday: "long",
+  timeZone: "UTC"
+});
+
+function inferWeekdayFromIso(iso: string): string | undefined {
+  const match = ISO_DATE_PATTERN.exec(iso);
+  if (!match) {
+    return undefined;
+  }
+
+  const [year, month, day] = match[1].split("-").map((segment) => Number(segment));
+  if ([year, month, day].some(Number.isNaN)) {
+    return undefined;
+  }
+
+  return WEEKDAY_FORMATTER.format(new Date(Date.UTC(year, month - 1, day)));
 }
 
 function parseDateOrUndefined(raw: string | undefined): Date | undefined {
@@ -356,6 +377,9 @@ function toTalk(record: PresentationRecord, event: EventRecord, room: string): T
     parseDateOrUndefined(eventPeriod?.end) ??
     new Date(startDate.getTime() + 12 * 60 * 1000);
 
+  const startTime = toMeetingTimeIso(startDate);
+  const endTime = toMeetingTimeIso(endDate);
+
   return {
     id: `APS-${record.id}`,
     title: normalize(record.title),
@@ -364,8 +388,9 @@ function toTalk(record: PresentationRecord, event: EventRecord, room: string): T
     track: canonicalizeEventType(event.type) || "UNKNOWN",
     topics: [...new Set([...(record.topics ?? []), ...(event.topics ?? [])].map((t) => normalize(t).toLowerCase()))],
     room,
-    startTime: toMeetingTimeIso(startDate),
-    endTime: toMeetingTimeIso(endDate),
+    startTime,
+    endTime,
+    weekday: inferWeekdayFromIso(startTime),
     sourceUrl: buildEventUrl(event.code, event.id)
   };
 }
@@ -427,7 +452,10 @@ async function runScrape(): Promise<ScrapeResult> {
 
   const indexPayload = await fetchJson<Record<string, number>>(EVENT_INDEX_URL);
   const eventIds = extractEventIds(indexPayload);
-  const maxEvents = Number(process.env.SCRAPER_MAX_EVENTS ?? eventIds.length);
+  const maxEventsSetting = process.env.SCRAPER_MAX_EVENTS?.trim();
+  const parsedMaxEvents =
+    maxEventsSetting && maxEventsSetting.length > 0 ? Number(maxEventsSetting) : undefined;
+  const maxEvents = parsedMaxEvents !== undefined && !Number.isNaN(parsedMaxEvents) ? parsedMaxEvents : eventIds.length;
   const allowedTypes = parseEventTypeFilter();
 
   const eventsToScan = eventIds.slice(0, maxEvents);

@@ -1,11 +1,11 @@
-tags: qec, superconducting qubits, trapped ions, neutral atoms
+tags: qec, superconducting qubits
 preferredphrases: fault tolerance, logical qubit, quantum control
-architectures: trapped ions, superconducting qubits, neutral atoms, photonic quantum computing, spin qubits
+architectures: superconducting qubits
 
 # AREAS OF INTEREST
-I want to focus on quantum computing, quantum information, qubits, superconducting qubits, trapped ions, neutral atoms, photonic quantum computing, spin qubits, quantum hardware.
-I am also interested in error correction, fault tolerance, quantum control, calibration, readout, coherence, noise, cryogenics, fabrication.
-I am also interested in quantum algorithms, quantum simulation, benchmarking, verification, compiler, software.
+I want to focus on quantum computing, quantum information, qubits, superconducting qubits, quantum hardware.
+I am also interested in the following areas of quantum computing: error correction, fault tolerance, quantum control, error mitigation, calibration, readout, coherence, noise, cryogenics, fabrication.
+I am also interested in quantum algorithms, quantum simulation, benchmarking, verification, compiler, software, ai, machine learning.
 
 # FILTERING
 # A session is dropped if any avoid phrase matches its title or any of its talk titles.
