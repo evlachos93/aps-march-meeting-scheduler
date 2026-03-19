@@ -4,7 +4,7 @@ architectures: superconducting qubits
 
 # AREAS OF INTEREST
 I want to focus on quantum computing, quantum information, superconducting qubits, quantum hardware.
-I am also interested in the following areas of quantum computing: error correction, fault tolerance, quantum control, error mitigation, calibration, readout, coherence, noise, cryogenics, fabrication.
+I am also interested in the following areas of quantum computing: error correction, fault tolerance, quantum control, error mitigation, calibration, readout, coherence, noise, cryogenics, fabrication, quantum circuits.
 I am also interested in quantum algorithms, quantum simulation, benchmarking, verification, compiler, software, ai, machine learning.
 
 # FILTERING
