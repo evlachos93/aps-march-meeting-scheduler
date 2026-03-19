@@ -76,74 +76,96 @@ app.innerHTML = `
     </aside>
     <main class="content-column">
       <h1>APS Internal Scheduler</h1>
-      <div class="panel row">
-        <div class="view-toggle" role="group" aria-label="View selector">
-          <button type="button" class="view-button active" data-view="talks">Talks</button>
-          <button type="button" class="view-button" data-view="sessions">Sessions</button>
+      <div class="panel filter-container">
+        <!-- Line 1: Search by and query box -->
+        <div class="filter-line search-line">
+          <div id="talk-search-mode-control" class="search-mode-control">
+            <label for="talk-search-mode" class="search-mode-label">Search by</label>
+            <select id="talk-search-mode">
+              <option value="default" selected>title, abstract, topic</option>
+              <option value="author-affiliation">author/affiliation</option>
+            </select>
+          </div>
+          <input id="query" placeholder="Search title, abstract, topic" />
         </div>
-        <input id="query" placeholder="Search talks" />
-        <select id="talk-search-mode">
-          <option value="default" selected>title, abstract, topic</option>
-          <option value="author-affiliation">author/affiliation</option>
-        </select>
-        <div class="time-filter-group">
-          <label>
-            <input type="radio" name="timeSlot" value="all" checked /> All times
-          </label>
-          <label>
-            <input type="radio" name="timeSlot" value="morning" /> 8-11am
-          </label>
-          <label>
-            <input type="radio" name="timeSlot" value="afternoon" /> 11am-3pm
-          </label>
-          <label>
-            <input type="radio" name="timeSlot" value="lateafternoon" /> 3pm-end-of-day
-          </label>
-        </div>
-        <div class="topic-dropdown" id="topic-filter">
-          <button
-            type="button"
-            id="topic-toggle"
-            class="topic-toggle-button"
-            aria-haspopup="true"
-            aria-expanded="false"
-          >
-            <span id="topic-toggle-label">Topics: All</span>
-            <span aria-hidden="true" class="topic-toggle-icon">▾</span>
-          </button>
-          <div id="topic-panel" class="topic-dropdown-panel hidden">
-            <div class="topic-dropdown-header">
-              <span>Topics</span>
-              <button type="button" id="topic-clear" class="topic-clear">Clear</button>
+
+        <!-- Line 2: topics, days, track options (Old Line 3) -->
+        <div class="filter-line options-line">
+          <div class="topic-dropdown" id="topic-filter">
+            <button
+              type="button"
+              id="topic-toggle"
+              class="topic-toggle-button"
+              aria-haspopup="true"
+              aria-expanded="false"
+            >
+              <span id="topic-toggle-label">Topics: All</span>
+              <span aria-hidden="true" class="topic-toggle-icon">▾</span>
+            </button>
+            <div id="topic-panel" class="topic-dropdown-panel hidden">
+              <div class="topic-dropdown-header">
+                <span>Topics</span>
+                <button type="button" id="topic-clear" class="topic-clear">Clear</button>
+              </div>
+              <div id="topic-options" class="topic-options"></div>
             </div>
-            <div id="topic-options" class="topic-options"></div>
+          </div>
+          <select id="day">
+            <option value="">All days</option>
+            <option value="sunday">Sunday</option>
+            <option value="monday">Monday</option>
+            <option value="tuesday">Tuesday</option>
+            <option value="wednesday">Wednesday</option>
+            <option value="thursday">Thursday</option>
+            <option value="friday">Friday</option>
+            <option value="saturday">Saturday</option>
+          </select>
+          <select id="track">
+            <option value="">All Event Types</option>
+            <option value="INVITED">Invited</option>
+            <option value="FOCUS">Focus</option>
+            <option value="ORAL">Oral</option>
+            <option value="POSTER">Poster</option>
+          </select>
+          <select id="sessionType">
+            <option value="">All session types</option>
+            <option value="INVITED">Invited</option>
+            <option value="FOCUS">Focus</option>
+            <option value="ORAL">Oral</option>
+            <option value="POSTER">Poster</option>
+          </select>
+        </div>
+
+        <!-- Line 3: time info (Old Line 2) -->
+        <div class="filter-line time-line">
+          <div class="time-filter-group">
+            <label>
+              <input type="radio" name="timeSlot" value="all" checked /> All times
+            </label>
+            <label>
+              <input type="radio" name="timeSlot" value="morning" /> 8-11am
+            </label>
+            <label>
+              <input type="radio" name="timeSlot" value="afternoon" /> 11am-3pm
+            </label>
+            <label>
+              <input type="radio" name="timeSlot" value="lateafternoon" /> 3pm-end-of-day
+            </label>
           </div>
         </div>
-        <select id="day">
-          <option value="">All days</option>
-          <option value="sunday">Sunday</option>
-          <option value="monday">Monday</option>
-          <option value="tuesday">Tuesday</option>
-          <option value="wednesday">Wednesday</option>
-          <option value="thursday">Thursday</option>
-          <option value="friday">Friday</option>
-          <option value="saturday">Saturday</option>
-        </select>
-        <select id="track">
-          <option value="">All tracks</option>
-          <option value="INVITED">Invited</option>
-          <option value="FOCUS">Focus</option>
-          <option value="ORAL">Oral</option>
-          <option value="POSTER">Poster</option>
-        </select>
-        <select id="sessionType">
-          <option value="">All session types</option>
-          <option value="INVITED">Invited</option>
-          <option value="FOCUS">Focus</option>
-          <option value="ORAL">Oral</option>
-          <option value="POSTER">Poster</option>
-        </select>
-        <button id="load">Find</button>
+
+        <!-- Line 4: sessions/talks -->
+        <div class="filter-line action-line">
+          <div class="view-toggle" role="group" aria-label="View selector">
+            <button type="button" class="view-button active" data-view="talks">Talks</button>
+            <button type="button" class="view-button" data-view="sessions">Sessions</button>
+          </div>
+        </div>
+
+        <!-- Search Button: own box under the 4th line -->
+        <div class="search-button-container">
+          <button id="load" class="large-search-button">Search</button>
+        </div>
       </div>
       <div id="stats" class="stats"></div>
       <div id="talks"></div>
@@ -213,6 +235,7 @@ const topicClearButton = document.querySelector<HTMLButtonElement>("#topic-clear
 const daySelect = document.querySelector<HTMLSelectElement>("#day")!;
 const trackSelect = document.querySelector<HTMLSelectElement>("#track")!;
 const sessionTypeSelect = document.querySelector<HTMLSelectElement>("#sessionType")!;
+const talkSearchModeControl = document.querySelector<HTMLDivElement>("#talk-search-mode-control")!;
 const talkSearchModeSelect = document.querySelector<HTMLSelectElement>("#talk-search-mode")!;
 const timeSlotRadios = document.querySelectorAll<HTMLInputElement>("input[name=\"timeSlot\"]");
 const topicLabels = new Map<string, string>();
@@ -230,6 +253,7 @@ if (
   !daySelect ||
   !trackSelect ||
   !sessionTypeSelect ||
+  !talkSearchModeControl ||
   !talkSearchModeSelect
 ) {
   throw new Error("Missing UI controls");
@@ -383,7 +407,7 @@ function setView(view: "talks" | "sessions"): void {
   }
   trackSelect.style.display = showingTalks ? "" : "none";
   sessionTypeSelect.style.display = showingTalks ? "none" : "";
-  talkSearchModeSelect.style.display = showingTalks ? "" : "none";
+  talkSearchModeControl.style.display = showingTalks ? "" : "none";
   updateQueryPlaceholder();
 }
 
