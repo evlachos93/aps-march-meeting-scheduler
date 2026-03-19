@@ -1993,26 +1993,6 @@
       "timingSource": "none"
     },
     {
-      "sessionCode": "MAR-W05",
-      "title": "Scalable, High-Performance Spin Qubits",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-W05",
-      "sessionType": "INVITED",
-      "talkTitles": [
-        "The Path to the Silicon Qubit Microchip: Tools and progress to advance exchange-only Si/SiGe quantum dot arrays",
-        "Device Integration and Process Design Kit based on Intel 18A Technology for Scaling Si/SiGe Spin Qubits",
-        "Diraq's spin qubits in 300mm CMOS wafers",
-        "Improving qubit fidelity from > 99.99% to > 99.999% and evaluating background noise effects in Si/SiGe",
-        "Weight-four parity checks in silicon - don't miss the bus"
-      ],
-      "date": "2026-03-19",
-      "weekday": "Thursday",
-      "startTime": "2026-03-19T17:18:00-06:00",
-      "endTime": "2026-03-19T17:54:00-06:00",
-      "timeRange": "5:18 PM-5:54 PM",
-      "room": "Convention Center, Four Seasons Ballroom 4",
-      "timingSource": "talks"
-    },
-    {
       "sessionCode": "MAR-W63",
       "title": "Thermodynamics of Quantum Electronic and Computing Systems",
       "url": "https://summit.aps.org/smt/2026/events/MAR-W63",
@@ -2031,26 +2011,6 @@
       ],
       "timeRange": "TBD",
       "timingSource": "none"
-    },
-    {
-      "sessionCode": "MAR-Y06",
-      "title": "Breakthroughs and New Opportunities Through High-Fidelity Shuttling of Semiconductor Spin Qubits",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-Y06",
-      "sessionType": "INVITED",
-      "talkTitles": [
-        "Is Si/SiGe suitable for conveyor-mode spin-qubit shuttling?",
-        "Breakthroughs and New Opportunities Through High-Fidelity Shuttling of Semiconductor Spin Qubits",
-        "Spin shuttling in silicon: avoiding valley-state excitations",
-        "Pipes, Loops and Snakes: Quantum computing leverage shuttling in semiconductor devices [note this talk is for the&nbsp;session on high-fidelity shuttling of semiconductor spin qubits]",
-        "Distributed Entanglement and Qubit Shuttling: Advancing Scalable Quantum Architectures in Germanium"
-      ],
-      "date": "2026-03-20",
-      "weekday": "Friday",
-      "startTime": "2026-03-20T09:12:00-06:00",
-      "endTime": "2026-03-20T11:00:00-06:00",
-      "timeRange": "9:12 AM-11:00 AM",
-      "room": "Convention Center, Mile High Ballroom 1AB",
-      "timingSource": "talks"
     },
     {
       "sessionCode": "MAR-Y08",
@@ -2178,33 +2138,6 @@
       "endTime": "2026-03-16T14:48:00-06:00",
       "timeRange": "12:00 PM-2:48 PM",
       "room": "Convention Center, Mile High Ballroom 1AB",
-      "timingSource": "talks"
-    },
-    {
-      "sessionCode": "MAR-B10",
-      "title": "Gate-defined spin qubits: Noise",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-B10",
-      "sessionType": "FOCUS",
-      "talkTitles": [
-        "Real-time charge noise sensing using a spectator valley state",
-        "Multi-level charge fluctuations in a Si/SiGe double quantum dot device",
-        "Real-Time FPGA-Based Multi-Parameter Feedback Stabilization of a Silicon Double Quantum Dot",
-        "Dynamical decoupling spectroscopy of nuclear quadrupole transitions in an exchange-only qubit: Experiment",
-        "Investigating Effects of Gamma Radiation on Spin Qubits in HRL SLEDGE Devices",
-        "Hydrogen Defects in Oxide Dielectrics: A Kinetic Perspective on Charge Noise in Si-Based Quantum Dot Architectures*",
-        "Dynamical decoupling spectroscopy of nuclear quadrupole transitions in an exchange-only qubit: Theory",
-        "Noise Processes Limiting Silicon Spin Qubit Performance up to 1 Kelvin",
-        "DFS-Qubit Error Modeling with Gauge-Averaged Tensor Network Simulations",
-        "The SpinPulse Library for the Transpilation and the Noise-Accurate Simulation of Spin Qubit Quantum Computers",
-        "Correlated offset charge jumps in Si/SiGe quantum dots",
-        "Mid-circuit Measurement and Sensor-free Feedforward Control in Silicon-MOS Quantum Dots."
-      ],
-      "date": "2026-03-16",
-      "weekday": "Monday",
-      "startTime": "2026-03-16T12:36:00-06:00",
-      "endTime": "2026-03-16T14:36:00-06:00",
-      "timeRange": "12:36 PM-2:36 PM",
-      "room": "Convention Center, Mile High Ballroom 1F",
       "timingSource": "talks"
     },
     {
@@ -2593,36 +2526,6 @@
       "timingSource": "talks"
     },
     {
-      "sessionCode": "MAR-J10",
-      "title": "Gate-Defined Spin Qubits: Control I",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-J10",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Frozen operation of FDSOI Quantum Devices",
-        "Unified Control Architecture For Spin Qubits in Quantum Dot Devices",
-        "Single-shot entangling gates using superexchange coupling for distant spin qubits",
-        "Mitigating Residual Exchange Coupling in Resonant Singlet-Triplet Qubits",
-        "High-fidelity and robust three-qubit Toffoli gates in silicon-based quantum-dot spin qubits",
-        "Tunnel control in a CMOS device with minimal overhead",
-        "High Fidelity Quantum Control in a Quadruple Quantum Dot Device",
-        "Nonlinearities, or lack thereof, in single dot electric dipole spin resonance",
-        "Efficient and robust hopping gates in Si/SiGe quantum dots with enhanced spin orbit coupling",
-        "Concatenated continuous driving of silicon qubit by amplitude and phase modulation",
-        "Resonant frequency control of electron spin in SiMOS quantum dot using magnetic field generated by external current",
-        "Single electron transistors made using a single, varying-width gate",
-        "Residual exchange coupling and simultaneous control in a triple dot device",
-        "Energy efficient control of semiconductor spin qubits with nanoscale magnets",
-        "Tensor network and open system simulation of transport through semiconductor arrays&nbsp;"
-      ],
-      "date": "2026-03-17",
-      "weekday": "Tuesday",
-      "startTime": "2026-03-17T17:54:00-06:00",
-      "endTime": "2026-03-17T18:30:00-06:00",
-      "timeRange": "5:54 PM-6:30 PM",
-      "room": "Convention Center, Mile High Ballroom 1F",
-      "timingSource": "talks"
-    },
-    {
       "sessionCode": "MAR-J14",
       "title": "New Capacitors, Josephson Junctions, and Mergemons",
       "url": "https://summit.aps.org/smt/2026/events/MAR-J14",
@@ -2813,36 +2716,6 @@
       "timingSource": "talks"
     },
     {
-      "sessionCode": "MAR-S10",
-      "title": "Gate-defined spin qubits: Multi-electron/hole qubits",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-S10",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "The p-Orbital Qubit in the Presence of Valley Orbit Coupling",
-        "Proposed Three-Hole Quadrupole Qubit",
-        "Device simulation of p-orbital qubits on a realistic semiconductor architecture",
-        "Full Configuration Interaction Simulations of Electron and Hole p-Orbital Qubits in Silicon and Germanium",
-        "Design of always-on exchange devices for SAGE qubits",
-        "Mitigating noise for singlet-only always-on gapless exchange (SAGE) qubits: Single-qubit gates",
-        "Impact of Alloy Disorder on Resonant Exchange Operation in Triple-Quantum-Dot Qubits",
-        "Mitigating noise for singlet-only always-on gapless exchange (SAGE) qubits: Two-qubit gates",
-        "Demonstration of an Always-On Exchange-Only Spin Qubit",
-        "Leakage Suppression via Simultaneous Exchange in a Triangular Exchange-Only Qubit",
-        "Exchange-only two-qubit operations in a two-dimensional SLEDGE array",
-        "Towards multi-qubit characterization with exchange-only qubits",
-        "A Four-Qubit Exchange-Only Quantum Processor On Intel's Tunnel Falls",
-        "Optimization of gate operations in quantum dot hybrid qubits formed from Ge holes",
-        "Simulating the Open System Dynamics of Multiple Exchange-Only Qubits using Subspace Monte Carlo"
-      ],
-      "date": "2026-03-19",
-      "weekday": "Thursday",
-      "startTime": "2026-03-19T08:00:00-06:00",
-      "endTime": "2026-03-19T11:00:00-06:00",
-      "timeRange": "8:00 AM-11:00 AM",
-      "room": "Convention Center, Mile High Ballroom 1F",
-      "timingSource": "talks"
-    },
-    {
       "sessionCode": "MAR-S15",
       "title": "More Josephson Junctions and Weak Links",
       "url": "https://summit.aps.org/smt/2026/events/MAR-S15",
@@ -2868,34 +2741,6 @@
       "endTime": "2026-03-19T10:36:00-06:00",
       "timeRange": "8:00 AM-10:36 AM",
       "room": "Convention Center, Mile High Ballroom 4C",
-      "timingSource": "talks"
-    },
-    {
-      "sessionCode": "MAR-U10",
-      "title": "Gate-defined spin qubits: Autotuning",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-U10",
-      "sessionType": "FOCUS",
-      "talkTitles": [
-        "Towards autonomous time-calibration of large quantum-dot devices: detection, real-time feedback, and noise spectroscopy",
-        "Automated large-scale analysis of quantum dots in germanium bilayer heterostructures",
-        "Automated Generation of Charge Stability Diagrams for Semiconductor Quantum-Dot Qubit Devices Using Parameterized Hubbard Models",
-        "Efficient Automated Tune-up of Exchange-only Spin Qubit in a Multiplexed Device",
-        "Efficient Autotuning of Si/SiGe Quantum Devices",
-        "Explainable Models for Quantum Dot Qubit Readout",
-        "Graph-Based Calibration for the control of silicon Spin Qubits",
-        "Quantifying Charge Stability Drift in Quantum Dots using Machine Learning",
-        "Scalable Autotuning of High-Temperature Quantum Dot Spin Qubits",
-        "Realizing adaptive algorithms on FPGA for spin-qubit readout (part 1)",
-        "Realizing adaptive algorithms on FPGA for spin-qubit readout (Part 2)",
-        "Coulomb diamond analysis for wafer-level characterization of Si qubit devices",
-        "Automated extraction of quantum dot energy levels from pulsed-gate spectroscopy data"
-      ],
-      "date": "2026-03-19",
-      "weekday": "Thursday",
-      "startTime": "2026-03-19T12:00:00-06:00",
-      "endTime": "2026-03-19T15:00:00-06:00",
-      "timeRange": "12:00 PM-3:00 PM",
-      "room": "Convention Center, Mile High Ballroom 1F",
       "timingSource": "talks"
     },
     {
@@ -3001,36 +2846,6 @@
       "endTime": "2026-03-20T09:12:00-06:00",
       "timeRange": "8:00 AM-9:12 AM",
       "room": "Convention Center, Mile High Ballroom 2A/3A",
-      "timingSource": "talks"
-    },
-    {
-      "sessionCode": "MAR-Y16",
-      "title": "Andreev spin qubits and gatemons",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-Y16",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "On- and off-chip superconducting resonators for hybrid quantum devices on planar germanium.",
-        "Superconducting gatemon qubit based on Cd<sub>3</sub>As<sub>2</sub> Dirac semimetal nanowires",
-        "Experimental signatures of quantum phase dynamics in gatemons",
-        "Vortex spin qubits: Andreev spin qubits bound to Josephson vortices in spin-orbit coupled planar Josephson junctions",
-        "Tunable nonlinearity in superconducting resonators hosting Al/InAs nanowires",
-        "A gate tunable transmon in the ultrastrong coupling regime",
-        "Inductively-Protected Andreev Spin Qubit&nbsp;",
-        "Realization of planar Josephson junction devices on a Nb-InAs platform",
-        "Hybrid superinductance with Al/InAs",
-        "Qubit spectroscopy of the Fraunhofer-modulated modes in InAs 2DEG Josephson Weak Links",
-        "Andreev Optoelectronics: Absorption Spectroscopy and Microwave-Optical Transduction",
-        "Controlling the Josephson Potential of a Hybrid Nanowire Fluxonium Qubit - Part I",
-        "Controlling the Josephson Potential of a Hybrid Nanowire Fluxonium Qubit - Part II",
-        "Molecular beam epitaxy of high mobility near surface Ge quantum wells for quantum computing",
-        "Building Hole-Based Andreev Spin Qubits: A Minimal Model Approach from Proximitized Hole Gases"
-      ],
-      "date": "2026-03-20",
-      "weekday": "Friday",
-      "startTime": "2026-03-20T08:12:00-06:00",
-      "endTime": "2026-03-20T10:36:00-06:00",
-      "timeRange": "8:12 AM-10:36 AM",
-      "room": "Convention Center, Mile High Ballroom 4D",
       "timingSource": "talks"
     },
     {
@@ -3447,34 +3262,6 @@
       "timingSource": "none"
     },
     {
-      "sessionCode": "MAR-F10",
-      "title": "Gate-Defined Spin Qubits: Modeling and Valley States",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-F10",
-      "sessionType": "FOCUS",
-      "talkTitles": [
-        "Probing disorder in semiconductor qubit devices with device simulations",
-        "Design and Simulation of a Back-Gated Si/SiGe Double Quantum Well for Valley Splitting Mapping",
-        "Valley splittings in the two bands k·p&nbsp;model for Si/SiGe heterostructures and spin qubit",
-        "Device-to-algorithm simulation of silicon spin-qubit arrays",
-        "QDFlow: an open-source quantum-dot physics simulator",
-        "Simple and Fast Silicon-Based Quantum Dot/Bit Simulation Method for Large-Scale Quantum Computing",
-        "Reducing orthotropic strain fluctuations in quantum dot devices by gate-layer stacking",
-        "Probing the valley phase of Si quantum dot qubits",
-        "Enhancing Valley Splitting in Si/SiGe Wiggle Well Quantum Dots through Integrated Stressor–Gate Architectures",
-        "Dissecting simultaneous exchange from modeled multi-dot multi-electron energy spectra",
-        "Fast evaluation of multielectron states for modeling of state preparation and measurement (SPAM) in quantum dot spin qubits",
-        "Anisotropic spin-valley coupling in Si/SiGe quantum dots",
-        "The effect of lateral confinement on valley splitting in a Si quantum well containing 5% Ge"
-      ],
-      "date": "2026-03-17",
-      "weekday": "Tuesday",
-      "startTime": "2026-03-17T08:36:00-06:00",
-      "endTime": "2026-03-17T10:24:00-06:00",
-      "timeRange": "8:36 AM-10:24 AM",
-      "room": "Convention Center, Mile High Ballroom 1F",
-      "timingSource": "talks"
-    },
-    {
       "sessionCode": "MAR-F48",
       "title": "Undergraduate Research X",
       "url": "https://summit.aps.org/smt/2026/events/MAR-F48",
@@ -3627,33 +3414,6 @@
       "endTime": "2026-03-18T10:24:00-06:00",
       "timeRange": "8:00 AM-10:24 AM",
       "room": "Convention Center, Mile High Ballroom 1E",
-      "timingSource": "talks"
-    },
-    {
-      "sessionCode": "MAR-M10",
-      "title": "Gate-Defined Spin Qubits: Control II",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-M10",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Evaluation of Point Defect Complexes as Charge Noise Sources in Semiconductor Quantum Dot Qubits",
-        "Piezo-Driven Uniaxial Strain Cell with Integrated RF for Si/SiGe Quantum Dots",
-        "A Heat-Resilient Spin Qubit in Silicon",
-        "Ordering nuclear spins in silicon quantum dots: part I",
-        "Ordering nuclear spins in silicon quantum dots: part-II",
-        "In-situ measurement and correction of pulse distortions in Si quantum-dot spin qubits",
-        "Scalable Millikelvin Control of Packaged Quantum Integrated Circuits",
-        "Toward Scalable Quantum Hardware:&nbsp; Integrating Spin Qubits with Cryogenic Control and Thermal Management",
-        "Practical MOSFET Quantum Computer with Millions of Qubits",
-        "Quantum Control Hardware Development for Semiconductor Spin Qubits",
-        "The singlet-triplet and exchange-only flopping-mode qubit",
-        "Direct measurement and fit of the energy spectrum of a quantum dot artificial molecule"
-      ],
-      "date": "2026-03-18",
-      "weekday": "Wednesday",
-      "startTime": "2026-03-18T12:00:00-06:00",
-      "endTime": "2026-03-18T14:12:00-06:00",
-      "timeRange": "12:00 PM-2:12 PM",
-      "room": "Convention Center, Mile High Ballroom 1F",
       "timingSource": "talks"
     },
     {
@@ -3838,28 +3598,6 @@
       "timingSource": "none"
     },
     {
-      "sessionCode": "MAR-W10",
-      "title": "Gate-defined spin qubits: Ge hole qubits",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-W10",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Virtual gates enabled by digital surrogate of quantum dot devices",
-        "Self-consistent device simulation of germanium hole qubits",
-        "Theoretical analysis of hole spin qubits in gate-defined germanium quantum dots",
-        "Electric control of hole spin qubits in Ge quantum dot",
-        "Material challenges and opportunities for Ge/GeSi heterostructures: a modelling perspective",
-        "Driving Ge hole spin qubit using acoustic wave",
-        "Quantum logic in a bilinear 18-qubit germanium quantum processor",
-        "Readout and energy dispersion of a germanium hole quantum dot hybrid qubit",
-        "Electrostatic modulation of orbital energy splittings in a Ge/SiGe double quantum dot",
-        "Fast readout at optimal point of a hopping Ge-hole spin qubit via dynamical longitudinal coupling to a superconducting resonator",
-        "Holonomic quantum computing with single-electron spin qubits at zero magnetic field",
-        "Quantum State Transfer in Germanium Hole Spin Qubits"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
-    },
-    {
       "sessionCode": "MAR-Z07",
       "title": "Quantum Annealing and Optimization Algorithms",
       "url": "https://summit.aps.org/smt/2026/events/MAR-Z07",
@@ -3887,30 +3625,6 @@
       "timeRange": "12:24 PM-2:48 PM",
       "room": "Convention Center, Mile High Ballroom 1C",
       "timingSource": "talks"
-    },
-    {
-      "sessionCode": "MAR-Z10",
-      "title": "Gate-defined spin qubits: Shuttling and long distance gates",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-Z10",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Static and Dynamic Simulations of Shuttling for FDX-22 and SiGe quantum devices",
-        "Bounds on Atomistic Disorder for Scalable Electron Shuttling",
-        "Enhancing Hole Spin Qubit Coherence through Confinement-Modulated Shuttling",
-        "Spin decoherence of an orbitally-excited electron in a moving quantum dot",
-        "Impact of Device Imperfections on Charge Transport and Valley Excitations During Electron Shuttling in SiMOS",
-        "Spin Qubit Leapfrogging: Dynamics of shuttling electrons ontop of another",
-        "Omnidirectional shuttling to avoid valley excitations in Si/SiGe quantum wells",
-        "Charge shuttling in two-dimensional SiMOS quantum dot array for scalable quantum compute",
-        "Remote coupling of quantum dot spin qubits via a superconducting qubit coupler",
-        "Interacting electrons in silicon quantum interconnects",
-        "Impurity effects on electronic structure, correlations, and entropy in elongated silicon quantum dots",
-        "wigner molecule formation and their effect on silicon mos qubit perfomance",
-        "Microwave Filters for Hybrid Circuit Quantum Electrodynamics",
-        "A quantum theory for RF reflectometry measurement of a semiconductor qubit"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
     },
     {
       "sessionCode": "VIR-A01",
@@ -4214,33 +3928,6 @@
       "timingSource": "none"
     },
     {
-      "sessionCode": "MAR-A10",
-      "title": "NV Centers and other Defects in Diamond",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-A10",
-      "sessionType": "FOCUS",
-      "talkTitles": [
-        "Invited Talk",
-        "High-Efficiency, High-Fidelity Charge Initialization of Shallow Nitrogen Vacancy Centers in Diamond",
-        "Nonlinear Optical Imaging of Single and Ensemble Nitrogen-Vacancy Centers in Diamond",
-        "Controlling the diamond surface to realize a novel platform for quantum technologies",
-        "High Sensitivity Nanoscale NMR via Quantum Memory Enhanced Multipoint Correlation Spectroscopy",
-        "Nonradiative carrier capture in nitrogen and nitrogen-vacancy center in diamond",
-        "Stabilization of near-surface NV<sup>0</sup> optical resonances by remote carrier injection",
-        "Characterizing the Temperature Dependence of NV and P1 Center Coherence Times",
-        "Real-time Color Center Spin Texture Engineering in Semiconductors: In-Situ Diagnostics via Petawatt Laser-Driven Ion Processing",
-        "Nitrogen control in HPHT single-crystal diamond growth for quantum applications",
-        "A defect in diamond with long spin relaxation times at room temperature",
-        "Many-body dipolar dynamics in two-dimensional monolayers of NV and P1 spin ensembles"
-      ],
-      "date": "2026-03-16",
-      "weekday": "Monday",
-      "startTime": "2026-03-16T10:00:00-06:00",
-      "endTime": "2026-03-16T10:36:00-06:00",
-      "timeRange": "10:00 AM-10:36 AM",
-      "room": "Convention Center, Mile High Ballroom 1F",
-      "timingSource": "talks"
-    },
-    {
       "sessionCode": "MAR-A28",
       "title": "Topology and Non-Hertimian Systems",
       "url": "https://summit.aps.org/smt/2026/events/MAR-A28",
@@ -4406,34 +4093,6 @@
       ],
       "timeRange": "TBD",
       "timingSource": "none"
-    },
-    {
-      "sessionCode": "MAR-G06",
-      "title": "Gate-defined spin qubits: Characterization at scale",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-G06",
-      "sessionType": "FOCUS",
-      "talkTitles": [
-        "Scaling up silicon-based quantum processors",
-        "Probing Microscale Heat Transport Through a Silicon Substrate at Deep Cryogenic Temperatures",
-        "Gate-Defined Quantum Dots and Charge Noise study of Forksheet transistors for Spin Qubit co-integration",
-        "High Volume Cryogenic Characterization of Advanced Si/SiGe Spin Qubit Devices",
-        "Cryogenic Screening of Si/SiGe Quantum Devices at 700 mK",
-        "Characterizing Spurious Dots due to Random-Alloy Disorder in Si/SiGe Heterostructures",
-        "Fabrication and Characterization of SiMOS Shared-Gate Architecture for Surface Code Implementation",
-        "Assessing Uniformity in 7x7 Quantum Dot Arrays Fabricated with CMOS Processes on 300 mm wafers",
-        "Multiplexed characterisation and automatic tune-up of 45 SEB + DQD unit cells in Si MOS for device process control",
-        "Integrated Flip-Chip Quantum-Dot Platform for Rapid Characterization of Semiconductor Qubit Materials",
-        "300mm fabrication of single-layer gate silicon quantum dot spin qubit devices using 0.33NA EUV lithography",
-        "EUV SiMOS spin qubits fabricated in a 300 mm pilot line",
-        "300mm wafer-level characterization of quantum dots formed in industrial CMOS qubit devices"
-      ],
-      "date": "2026-03-17",
-      "weekday": "Tuesday",
-      "startTime": "2026-03-17T12:36:00-06:00",
-      "endTime": "2026-03-17T15:00:00-06:00",
-      "timeRange": "12:36 PM-3:00 PM",
-      "room": "Convention Center, Mile High Ballroom 1AB",
-      "timingSource": "talks"
     },
     {
       "sessionCode": "MAR-G11",
@@ -5246,40 +4905,6 @@
         "Investigating the dE/dx Response of the ATLAS Simulation for Long-Lived Charged Particle Searches",
         "Search for Inelastic Dark Matter with Soft Displaced Electrons Using CMS Run2 Data at sqrt(s) = 13 TeV",
         "Search for Inelastic Dark Matter with Soft Displaced Electrons using CMS Run 3"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
-    },
-    {
-      "sessionCode": "APR-D88",
-      "title": "Mini-Symposium: BSM Probes at Neutrino Factories",
-      "url": "https://summit.aps.org/smt/2026/events/APR-D88",
-      "sessionType": "FOCUS",
-      "talkTitles": [
-        "Neutrino Facilities as Versatile Probes of New Physics",
-        "Distinguishing Flavor Model Predictions at Neutrino Experiments",
-        "Testing Pseudo-Dirac Sensitivity with Atmospheric Neutrino Studies",
-        "Reconstruction of NuMI Electron Neutrino Interactions at ICARUS with SPINE Machine Learning",
-        "Towards a First Measurement of Neutral Current Coherent-like Neutral Pion Production with the MicroBooNE Detector"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
-    },
-    {
-      "sessionCode": "APR-G89",
-      "title": "Theoretical Progress in Particles and Fields I",
-      "url": "https://summit.aps.org/smt/2026/events/APR-G89",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Recent theory progress on hadronic B decays",
-        "Gradient flow renormalization: from lattice QCD to the precision frontier",
-        "Isotensor Three-Pion Scattering from Lattice QCD",
-        "Understanding the Dynamics of SU(2) Gauge Theories in Max Tree Gauge",
-        "Qubit-Regularized SU(2) and SU(3) Gauge Theories in Various Dimensions",
-        "Spacetime Reconstruction from Entanglement Entropy for the Vaidya-AdS Spacetime using Machine Learning",
-        "Investigation of Topological Features in Lepton-Number Violating Seesaw Extensions",
-        "Protecting baryon number violating operators",
-        "Pseudo-Parton Distributions in Diquark Spectator Models"
       ],
       "timeRange": "TBD",
       "timingSource": "none"
@@ -6842,24 +6467,6 @@
       "timingSource": "none"
     },
     {
-      "sessionCode": "APR-J92",
-      "title": "Coherent Neutrino Interactions",
-      "url": "https://summit.aps.org/smt/2026/events/APR-J92",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Improved ICARUS Side Cosmic Ray Tagger Resolution Using Data-Driven Calibration of Timing Delays",
-        "Readout, Monitoring, and Calibration of the Heavy-Water Detector System in the COHERENT Experiment",
-        "Use of a heavy water Cherenkov detector to study tensor component of weak interactions via neutrinos from the Spallation Neutron Source.",
-        "SiPM Characterization at 77K for COHERENT CryoCsI Detector",
-        "Detecting Neutrino-Nucleus Interactions in a Heavy Water Cherenkov Detector at the SNS",
-        "CryoCsI, a subsystem of COHERENT experiment for CEvNS and beyond",
-        "Reconstruction of interaction vertices for background rejection for the COH-CryoCsI-1",
-        "The design and expanded physics reach of the PROSPECT-II detector upgrade"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
-    },
-    {
       "sessionCode": "APR-L90",
       "title": "Physics of Axions II",
       "url": "https://summit.aps.org/smt/2026/events/APR-L90",
@@ -6896,46 +6503,6 @@
       ],
       "timeRange": "TBD",
       "timingSource": "none"
-    },
-    {
-      "sessionCode": "APR-P89",
-      "title": "Theoretical Progress in Particles and Fields II",
-      "url": "https://summit.aps.org/smt/2026/events/APR-P89",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Computing Massive Five-Point Amplitudes from On-Shell Methods.",
-        "Exact Solutions to Non-Perturbative Dynamics of Gauge Theories",
-        "Analytical Derivation of Chiral Symmetry Breaking in QCD-like SU(N) and Sp(N) Gauge Theories using AMSB",
-        "Gravitational Dark Matter from Curved Spacetime: Cosmological Particle Production in Open and Closed Universes",
-        "Cosmological Stasis Confronts BBN",
-        "Near-Critical Higgs Inflation in Metric and Metric-affine Schemes of Gravity",
-        "Baryogenesis from Exploding Primordial Black Holes",
-        "Revisiting quantum information flow in black hole evaporation",
-        "Multimessenger Astronomy Beyond the Standard Model: New Window from Quantum Sensors"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
-    },
-    {
-      "sessionCode": "APR-V84",
-      "title": "Neutrino Physics",
-      "url": "https://summit.aps.org/smt/2026/events/APR-V84",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Electron Cyclotron Resonance Dissociator Demonstrator for the Project 8 Experiment",
-        "Multimode Resonant Cavity Designs for the Project 8 Neutrino Mass Experiment",
-        "Hidden Markov Model Track Identification for Project 8 Phase III",
-        "Measurement of <sup>218</sup>Po Ion Fraction and Mobility in Liquid Xenon",
-        "MC Simulation Model for ^{232}Th+^{60}Co Calibration of the CUORE Experiment",
-        "LXe purity monitor for the nEXO experiment"
-      ],
-      "date": "2026-03-19",
-      "weekday": "Thursday",
-      "startTime": "2026-03-19T10:54:00-06:00",
-      "endTime": "2026-03-19T11:30:00-06:00",
-      "timeRange": "10:54 AM-11:30 AM",
-      "room": "Hyatt Regency, Capitol 5",
-      "timingSource": "talks"
     },
     {
       "sessionCode": "APR-V88",
@@ -6993,30 +6560,6 @@
       "timeRange": "9:12 AM-9:48 AM",
       "room": "Convention Center, Bellco Theatre 1-2",
       "timingSource": "talks"
-    },
-    {
-      "sessionCode": "MAR-A19",
-      "title": "2D Materials: Electronics",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-A19",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Al-Engineered Anatase/Rutile TiO₂ Heterostructures for Superior Resistive Switching",
-        "Plasmons in multilayer structures",
-        "Electrical and Structural Evolution of Few- to Multi-Layer MoS₂ Devices Upon Electrochemical Intercalation",
-        "Electron Field Emission from Low-energy Bands in 2-Dimensional Materials",
-        "Evidence of electron crystal in crystalline rhombohedral graphene",
-        "First-Principles Investigation of Defect- and Interface-Controlled Resistive Switching in 2D Transition Metal Dichalcogenides",
-        "First-Principles Investigation of the Resistive Switching Energetics in Monolayer MoS<sub>2</sub>: Insights into Metal Diffusion and Adsorption",
-        "Field-effect Transport Properties of Monolayer WSe<sub>2</sub> using Nb-doped WSe<sub>2</sub> as Source and Drain",
-        "High-Performance Nanoribbon Transistors with Monolayer Transition Metal Dichalcogenide",
-        "Spectroscopic Investigation of van der Waals Contacts between Semiconducting-TMD Monolayers and Semimetals",
-        "Ultrafast Field-Effect Transistor Based on Wet-Transfer Assisted Monolayer WS₂/MoS₂ Heterostructure",
-        "Negative differential resistance oscillators based on ReS<sub>2</sub>/h-BN/ReS<sub>2</sub> van der Waals resonant tunneling diodes",
-        "Fabrication Nanostructures on Field Effect Transistors for Methane Gas Sensing",
-        "Synthesis and Characterization of Hexagonal Boron Nitride for Neutron Detection Application"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
     },
     {
       "sessionCode": "MAR-A22",
@@ -7206,27 +6749,6 @@
       "timingSource": "none"
     },
     {
-      "sessionCode": "MAR-C24",
-      "title": "2D Materials: Transition Metals Dichalcogenides",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-C24",
-      "sessionType": "FOCUS",
-      "talkTitles": [
-        "Moiré Structures Beyond Small Twist Angles",
-        "Layer-Resolved Picometer-Scale Lattice Reconstruction in Large Angle Twisted WSe<sub>2</sub>",
-        "Dynamic Force Microscopy and Tunneling Spectroscopy of Moiré Trilayers with Atomic Lattice Reconstruction",
-        "Imaging twisted bilayer 1T’-WTe<sub>2</sub> with scanning tunneling microscopy and spectroscopy",
-        "Exploring charge density waves in twisted bilayer NbSe<sub>2</sub> with machine learning",
-        "Geometrically Induced Emergent Band in Electronic Structures of van der Waals Moiré Bilayer: PtSe<sub>2</sub>/PtTe<sub>2</sub>",
-        "STM studies of air-sensitive WTe<sub>2</sub> enabled by sliding disassembly techniques",
-        "Using a MEMS-based Generic Actuation platform(MEGA2D) to explore low temperature optical properties of 2D materials",
-        "Emergent Pair Density Waves in Van Hove Metals: The Case Study of Bilayer&nbsp; 1T'-WTe<sub>2</sub>",
-        "Moiré-enabled spin pumping and preservation in MoSe<sub>2</sub>/WS<sub>2</sub> heterobilayers",
-        "Tunable Bulk Crystal Analogues of Moiré Materials"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
-    },
-    {
       "sessionCode": "MAR-C32",
       "title": "Collective Modes and THz Response in Superconductors",
       "url": "https://summit.aps.org/smt/2026/events/MAR-C32",
@@ -7372,29 +6894,6 @@
       "timeRange": "5:42 PM-5:54 PM",
       "room": "Convention Center, Bluebird 2C",
       "timingSource": "talks"
-    },
-    {
-      "sessionCode": "MAR-F22",
-      "title": "2D Materials: Scanning Probe Characterization",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-F22",
-      "sessionType": "FOCUS",
-      "talkTitles": [
-        "High resolution studies of quantum melting of field-induced Wigner crystals",
-        "Purcell enhanced nano-spectroscopy of&nbsp;strain-localized dark exciton and defect states in WSe<sub>2</sub>",
-        "Visible Cryogenic Near-field Imaging of Single Photon Emitters in Transition Metal Dichalcogenide Structures",
-        "Strain-Engineered Correlated Phases and Band Flattening in Graphene via Stressor Arrays (Part 1)",
-        "Strain-Engineered Correlated Phases and Band Flattening in Graphene via Stressor Arrays (Part 2)",
-        "Layer-resolved microwave imaging of a van der Waals heterostructure",
-        "Visualizing asymmetric Coulomb blockade in nanoislands on a semiconductor",
-        "Conductive Atomic Force Microscopy Imaging of Rhombohedral Multilayer Graphene",
-        "Local electronic structure of single-layer Kagomé MOFs on carbon surfaces",
-        "Scanning Probe Microscopy Studies of Gate Tunable Bi<sub>2</sub>Se<sub>3</sub>/hBN Heterostructures",
-        "Imaging Electrostatically Confined Dirac Fermions in Elliptically Shaped Graphene Quantum Dot",
-        "Anomalous Impurity-Induced Charge Modulations in Black Phosphorus",
-        "Imaging Correlated Electron States in Electrostatically Defined Quantum Dots"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
     },
     {
       "sessionCode": "MAR-F27",
@@ -7787,57 +7286,6 @@
       "timingSource": "talks"
     },
     {
-      "sessionCode": "MAR-H00-05",
-      "title": "Poster Session I: Particles and Fields (2:00PM-5:00PM MT)",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-H00-05",
-      "sessionType": "POSTER",
-      "talkTitles": [
-        "Spinorial Representation of Elastic Surface and Membrane Vibrations: From Extrinsic Curvature Model to Spin-Connected Dirac-like Operator.",
-        "Physics guided discrepancy learning for neutron induced cross sections",
-        "A Geometry-Independent Framework for Charged-Particle Track Reconstruction in the Mu2e Experiment",
-        "Simultaneous reconstruction of boosted, resolved, and semi-boosted top-quark events with symmetry-preserving attention networks",
-        "Unsupervised Non-Parameterized Searches for Anomalous Events at CMS Using Wasserstein Normalizing Autoencoders",
-        "Development of Shower Characterization Tools Within Pandora for the DUNE Near Detector",
-        "Predicting SUSY Particle Event Count at Future Colliders",
-        "Status of the ATLAS ITk Inner System Upgrade for the HL-LHC",
-        "Simulation and Validation of the ICARUS PMT Adder-Board Response",
-        "Plastic Scintillator System for Cosmic Particle Detection",
-        "Fabrication and Characterization of Thin Amorphous Selenium Films for Integrated Charge plus Light Sensors",
-        "Microwave Multiplexing for Quantum Sensing Experiments",
-        "Characterizing SiPM Response at Reduced Operating Voltages",
-        "Underground Operations at SURF: Day-to-Day Life and Troubleshooting in the LUX-ZEPLIN Dark Matter",
-        "SiPM Array Characterization for Dual Phase XeNeu Time Projection Chamber",
-        "Improving sensitivity with a boosted decision tree in a search for dark photons decaying to lepton jets at CMS",
-        "Nonaquarks: A Possible Candidate of Dark Matter Particles",
-        "Hunting for Axions and Hidden Photons in the Wilderness: The Search for Non-Interacting Particles Experimental Hunt (SNIPE Hunt)",
-        "Axion Longitudinal Plasma HAloscope (ALPHA) Experiment to search for the Post-Inflation Axion",
-        "A Geometrical Approach to Neutrino Oscillation Parameters",
-        "CP Violation in Neutrino Oscillations",
-        "Collective Neutrino Oscillations using the Stabilizer Tensor Network Formalism",
-        "Probing Earth's Chemical Composition with Neutrino Oscillation Tomography",
-        "A Set-Matrix Duality Principle for the Dirac Equation",
-        "Predictions of Neutrino Fluxes at the Forward Physics Facility at the High Luminosity LHC",
-        "Using Simulation to Interpret the Liquid Argon Scattering Experiment's Results",
-        "A Low-Cost, Solder-Free, Breadboard-Based System for Hands-On Nuclear and Particle Detection Education",
-        "Generic Long-Lived Particle Search at SBND",
-        "Reconstruction of Low Energy Neutrino-Induced Neutrons in the MicroBooNE Detector",
-        "Coleman-Weinberg Corrections to SUSY-breaking from N=2 Supersymmetric Yang-Mills Theory to Adjoint QCD",
-        "Unbinned Likelihood Fits for Setting Limits on a Search for Doubly Charged Higgs Bosons at CMS",
-        "Search for exotic decays of the Higgs boson in 8-jet final state using Neural Network algorithms",
-        "A Higgs Boson Composed of the W,Z Gauge Bosons",
-        "Stable Charged Bodies from Continuous Electromagnetic Fields",
-        "Simulation of BeEST Photopeak Calibration",
-        "Secondary Lund jet plane as a gluon enriched sample",
-        "Hunting for the Axion: Innovating Cavity Geometry for Large-Volume, High-Frequency Dark Matter Searches (ADMX-VERA)",
-        "Radiation Damage Simulation for the ATLAS Inner Tracker (ITk) System",
-        "Robotic testing system operation for electrical characterization of ECON integrated circuits in the CMS High Granularity Calorimeter",
-        "Thermal Studies of CMS HGCAL Cassettes for the HL-LHC Upgrade",
-        "Chasing Ghost Particles: Is Neutrino Directional Reconstruction Possible with DUNE's LAr-TPC?"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
-    },
-    {
       "sessionCode": "MAR-H00-08",
       "title": "Poster Session I: Forums: FEd, FOEP, FDI, FECS, FGSA (2:00PM-5:00PM MT)",
       "url": "https://summit.aps.org/smt/2026/events/MAR-H00-08",
@@ -7945,30 +7393,6 @@
       "timeRange": "5:18 PM-5:54 PM",
       "room": "Convention Center, Bellco Theatre 1-2",
       "timingSource": "talks"
-    },
-    {
-      "sessionCode": "MAR-J24",
-      "title": "Advanced Characterization of New 2D Materials",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-J24",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Probing the intrinsic field in few-layer Janus RhSeCl using ARPES",
-        "Cr<sub>0.5</sub>Ga<sub>0.5</sub>Te<sub>2</sub>: A near-room temperature semiconducting 2D van der Waals ferromagnet",
-        "Magnetron-Sputtered Perovskite Catalysts for Sustainable Fuel Generation",
-        "Reaching the monolayer limit in a van der Waals actinide magnet",
-        "Pressure Tuning of Ferromagnetism in the van der Waals Layered β-UTe3 Material",
-        "Inherent Fermi-Level Pinning and Work-Function Modulation at the Ultralow-Defect MoSe<sub>2</sub>/Au(111) Epitaxial Junction",
-        "Magnetic phase transition and Fermi level tuning by alkali metal doping in a 2D magnetic material",
-        "Emergence of Van Hove singularities in (Sb<sub>2</sub>Te<sub>3</sub>)<sub>m</sub>(Sb<sub>2</sub>)<sub>n</sub> Misfit Materials",
-        "Brillouin Scattering of Intercalation Tunable Acoustic Phonons in 2D Layered Materials",
-        "Semi-empirical Hamiltonian with Machine Learning for accurate and efficient band gap prediction",
-        "A first-principles investigation on the potential energy surfcae for Transition Metals adsorbed on Biphenylene",
-        "Ferromagnetism in a van der Waals Antiferromagnet via Anisotropy Engineering",
-        "Layer- and Strain-Dependent Opto/Electronic Properties of GaSe: Experimental and Computational Study",
-        "The Band Geometry of Band Mixing"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
     },
     {
       "sessionCode": "MAR-J30",
@@ -9361,31 +8785,6 @@
       "timingSource": "none"
     },
     {
-      "sessionCode": "MAR-U37",
-      "title": "2D Materials: Moire; Rhombohedral Graphene; Superlattice",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-U37",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Moiré Superlattices in Graphene on Twisted Hexagonal Boron Nitride",
-        "Quantum Geometry of Moiré Flat Bands Beyond the Valley Paradigm",
-        "Giant Shift Current in Electrically-Tunable Superlattice Bilayer Graphene",
-        "Superconductivity in a Bulk Analog of Moiré Materials",
-        "A Scalable Platform of Deterministic Flat Band : Epitaxial Monolayer WS2 on Au (111) via Lattice Mismatch-driven Colossal Moiré Potential",
-        "Correlated phases in moiré triangular lattice Hubbard model: a DMRG study",
-        "Engineering Hubbard models in gated two-dimensional moiré systems",
-        "Designing Structural Frustrations in Trilayer Moiré Superlattices",
-        "Interaction-induced layer-skyrmion lattices in moire rhombohedral graphene Chern insulators",
-        "Weak and Strong Moire Potentials from hBN Alignment Orientation in Rhombohedral Graphene",
-        "Shot noise measurements in the strange metal phase of twisted bilayer graphene",
-        "Nano-light Manipulation of Moiré Photodynamics in a Scanning Tunneling Microscope",
-        "Quantum transport study of large-angle twisted MoTe<sub>2</sub>",
-        "Investigation of supercurrent transport near the satellite Dirac point in monolayer graphene Josephson junctions",
-        "Observation of Reentrant quantum anomalous Hall effect in twisted MoTe2"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
-    },
-    {
       "sessionCode": "MAR-U51",
       "title": "Advanced Laser-based Imaging and Spectroscopy",
       "url": "https://summit.aps.org/smt/2026/events/MAR-U51",
@@ -9566,28 +8965,6 @@
       "timingSource": "talks"
     },
     {
-      "sessionCode": "MAR-Y23",
-      "title": "2D Materials: Time Resolved Probes",
-      "url": "https://summit.aps.org/smt/2026/events/MAR-Y23",
-      "sessionType": "FOCUS",
-      "talkTitles": [
-        "Multi-technique research ecosystem centred around electronic band structure characterisation",
-        "Direct Imaging of Polariton Relaxation Dynamics in TMDC Microcavities",
-        "Probing Collective Quantum Dynamics in Solid-State Molecular Systems",
-        "Quantum coherence of excitons strongly bound to the magnetic order",
-        "Visualizing a Terahertz Superfluid Plasmon in a Two-Dimensional Superconductor",
-        "Temperature Dependent THz Spectroscopy of the Quasi-1D van der Waals Semiconductor AgCrP₂S₆",
-        "Photocurrent response in device-geometry engineered Anisotropic Van der Waals Metals",
-        "Stacking-Controlled Nonequilibrium Mott Dynamics of Moiré Excitons",
-        "Far-field imaging of plasmon polaritons in natural van der Waals material",
-        "Probing the Role of Dark Excitons in Twist-Angle-Dependent Transport Dynamics in WS<sub>2</sub>/WSe<sub>2</sub> via Time-Resolved ARPES",
-        "Novel characterization of spin waves in twisted CrSBr/CrSBr heterostructures via DFT/QFT modeling and experiments",
-        "Correlated exciton physics in strongly coupled electron-hole bilayers"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
-    },
-    {
       "sessionCode": "MAR-Y29",
       "title": "Atomic Structure and Light-Matter Interactions",
       "url": "https://summit.aps.org/smt/2026/events/MAR-Y29",
@@ -9662,26 +9039,6 @@
         "Analogies Between Quantum Uncertainty and Timing Noise in Pulsar Timing Arrays",
         "G4VR: A Virtual Reality Implementation of GEANT4",
         "Feasibility of Neutrino Communication: A Modern Physics Reassessment"
-      ],
-      "timeRange": "TBD",
-      "timingSource": "none"
-    },
-    {
-      "sessionCode": "VIR-L02",
-      "title": "Particles and Fields III",
-      "url": "https://summit.aps.org/smt/2026/events/VIR-L02",
-      "sessionType": "ORAL",
-      "talkTitles": [
-        "Design, Simulation, and Fabrication of Thin-Film RadFET and SPND Neutron Detectors Using Gd, B, and Y₂O₃ Layers",
-        "New Submission",
-        "Advanced Machine Learning Framework for Photon Discrimination in Hybrid Neutrino Detectors",
-        "Revisiting Radiation Reaction: A Delayed-Interaction Perspective",
-        "Mixed Gate Mechanisms for the Electron Traveling Pathways in the Shared Orbital Sheets of Neighbour Atoms in Molecules with Applications to H<sub>2</sub> and 2H<sub>2</sub>O Molecules",
-        "On the electromagnetic interactions of Dirac and Weyl particles",
-        "Title: Consciousness as the Fundamental Observer: A String-Theoretic Framework for Human Biophysics",
-        "Enhancing liquid argon scintillation with xenon doping for 0nbb searches",
-        "The Endcap Timing Layer of the CMS MIP Timing Detector for HL-LHC",
-        "An Analysis of the Neutrino Magnetic Moment using the NOvA Near Detector"
       ],
       "timeRange": "TBD",
       "timingSource": "none"
