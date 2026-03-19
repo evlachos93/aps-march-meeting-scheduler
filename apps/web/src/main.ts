@@ -79,14 +79,13 @@ app.innerHTML = `
       <div class="panel filter-container">
         <!-- Line 1: Search by and query box -->
         <div class="filter-line search-line">
+          <input id="query" placeholder="Search title, abstract, topic" />
           <div id="talk-search-mode-control" class="search-mode-control">
-            <label for="talk-search-mode" class="search-mode-label">Search by</label>
-            <select id="talk-search-mode">
+            <select id="talk-search-mode" title="Search by">
               <option value="default" selected>title, abstract, topic</option>
               <option value="author-affiliation">author/affiliation</option>
             </select>
           </div>
-          <input id="query" placeholder="Search title, abstract, topic" />
         </div>
 
         <!-- Line 2: topics, days, track options (Old Line 3) -->

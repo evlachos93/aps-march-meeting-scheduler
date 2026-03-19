@@ -114,7 +114,7 @@ button {
 
 .search-line {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr auto;
   align-items: center;
   background: #fff;
   border: 1px solid var(--line);
@@ -128,7 +128,20 @@ button {
   align-items: center;
   gap: 12px;
   padding: 0 16px;
-  border-right: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.search-mode-control select {
+  border: none;
+  background: transparent;
+  padding: 8px 0;
+  font-weight: 500;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.search-mode-control select:focus {
+  outline: none;
 }
 
 .search-line #query {
