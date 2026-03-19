@@ -15,7 +15,11 @@ build/
 # Environment configs
 .env
 
+# data
 notes.json
+schedule.json
+daily-summaries.json
+ui-topics.json
 
 # Logs
 npm-debug.log*
