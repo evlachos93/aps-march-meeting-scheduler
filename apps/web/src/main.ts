@@ -661,6 +661,20 @@ async function loadSessions(): Promise<void> {
   console.log(`[loadSessions] Received ${payload.sessions.length} sessions`);
   statsContainer.textContent = `${payload.sessions.length} session${payload.sessions.length === 1 ? "" : "s"} found`;
 
+  // Fetch all talks to build a lookup map for session talks
+  let talksMap = new Map<string, Talk>();
+  try {
+    const talksResponse = await fetch(`${API_BASE}/talks?sortBy=title`);
+    if (talksResponse.ok) {
+      const talksPayload = (await talksResponse.json()) as { talks: Talk[] };
+      for (const talk of talksPayload.talks) {
+        talksMap.set(talk.id, talk);
+      }
+    }
+  } catch (err) {
+    console.warn("[loadSessions] Failed to fetch talks for metadata", err);
+  }
+
   // Group sessions by date
   const sessionsByDate = new Map<string, Session[]>();
   for (const session of payload.sessions) {
@@ -678,8 +692,26 @@ async function loadSessions(): Promise<void> {
       const sessionsHtml = sessions
         .map((session, index) => {
           const detailsId = `session-talks-${date}-${index}`;
-          const talksList = session.talkTitles
-            .map((title) => `<li>${escapeHtml(title)}</li>`)
+          const talksList = session.talkIds
+            .map((talkId, i) => {
+              const talk = talksMap.get(talkId);
+              const title = session.talkTitles[i] ?? "Unknown Talk";
+              
+              if (!talk) {
+                return `<li>${escapeHtml(title)}</li>`;
+              }
+              
+              // Build tooltip with time and presenter info
+              const presenterName = talk.authors?.[0]?.name ?? talk.presenter ?? "Unknown";
+              const presenterAffiliation = talk.authors?.[0]?.affiliations?.[0] ?? "";
+              const talkTime = formatDateTime(talk.startTime);
+              const tooltipText = `${talkTime} | ${presenterName}${presenterAffiliation ? ` (${presenterAffiliation})` : ""}`;
+              
+              // Use sourceUrl if available, otherwise use a hash link with talk ID
+              const talkLink = talk.sourceUrl ?? `#talk-${talk.id}`;
+              
+              return `<li><a href="${talkLink}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(tooltipText)}">${escapeHtml(title)}</a></li>`;
+            })
             .join("");
 
           return `
